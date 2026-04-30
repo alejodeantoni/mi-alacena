@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.2.1</div>
+  <div class="ver">v8.2.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -546,8 +546,8 @@ const CATS_F={'Carnes y aves':'🥩','Pescados':'🐟','Congelados':'🧊','Verd
 const CATS_D={'Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Bebidas':'🥤','Limpieza':'🧹','Otros':'📦'};
 const ALL_CATS={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Congelados':'🧊','Limpieza':'🧹','Otros':'📦'};
 const COLORS={'Lácteos':'#E6F1FB','Carnes y aves':'#FCEBEB','Pescados':'#E1F5EE','Fiambres':'#FAECE7','Verduras':'#EAF3DE','Frutas':'#FAEEDA','Bebidas':'#E1F5EE','Harinas y cereales':'#FAEEDA','Arroz y pastas':'#FAECE7','Aceites':'#EAF3DE','Conservas':'#E6F1FB','Snacks':'#FBEAF0','Especias':'#FCEBEB','Congelados':'#EEEDFE','Limpieza':'#EEEDFE','Otros':'#F1EFE8'};
-const FRESH_CATS=['Carnes y aves','Pescados','Fiambres','Lácteos','Verduras','Frutas'];
-const DURACION={'Carnes y aves':{h:3,f:90},'Pescados':{h:2,f:60},'Fiambres':{h:7,f:30},'Lácteos':{h:7,f:30},'Verduras':{h:5,f:30},'Frutas':{h:7,f:60}};
+const FRESH_CATS=['Carnes y aves','Pescados','Fiambres','Lácteos','Verduras','Frutas','Arroz y pastas','Conservas'];
+const DURACION={'Carnes y aves':{h:3,f:90},'Pescados':{h:2,f:60},'Fiambres':{h:7,f:30},'Lácteos':{h:7,f:30},'Verduras':{h:5,f:30},'Frutas':{h:7,f:60},'Arroz y pastas':{h:null,f:null,d:730},'Conservas':{h:null,f:null,d:1095}};
 
 let loc='h',nav='inv',sortByVenc=false,vencView='cur';
 let currentCat='Todos',catCatFilter='Todos',histFilter='todos',compView='list';
@@ -986,13 +986,25 @@ function openAssignModal(catId){
   aiSuggestedDate=null;
   const aiEl=document.getElementById('aiDateSuggest');
   if(FRESH_CATS.includes(cat.cat)&&DURACION[cat.cat]){
-    const dias=DURACION[cat.cat];const hDate=addDays(dias.h);const fDate=addDays(dias.f);
-    document.getElementById('aiDateText').textContent='Heladera: ~'+dias.h+' días ('+new Date(hDate+'T00:00:00').toLocaleDateString('es-AR')+') · Freezer: ~'+dias.f+' días ('+new Date(fDate+'T00:00:00').toLocaleDateString('es-AR')+')';
-    aiSuggestedDate={h:hDate,f:fDate};aiEl.style.display='block';
+    const dias=DURACION[cat.cat];
+    let txt='';aiSuggestedDate={};
+    if(dias.h){const hDate=addDays(dias.h);txt+='Heladera: ~'+dias.h+' días ('+new Date(hDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.h=hDate;}
+    if(dias.f){const fDate=addDays(dias.f);txt+='Freezer: ~'+dias.f+' días ('+new Date(fDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.f=fDate;}
+    if(dias.d){const dDate=addDays(dias.d);txt+='Despensa: ~'+Math.round(dias.d/30)+' meses ('+new Date(dDate+'T00:00:00').toLocaleDateString('es-AR')+')';aiSuggestedDate.d=dDate;}
+    document.getElementById('aiDateText').textContent=txt;
+    aiEl.style.display='block';
   } else {aiEl.style.display='none';}
   document.getElementById('assignModalBg').classList.add('open');
 }
-function applyAiDate(){if(!aiSuggestedDate)return;document.getElementById('assignVenc').value=assignQtys.f>0?aiSuggestedDate.f:aiSuggestedDate.h;toast('Fecha aplicada');}
+function applyAiDate(){
+  if(!aiSuggestedDate)return;
+  let date=null;
+  if(assignQtys.f>0&&aiSuggestedDate.f)date=aiSuggestedDate.f;
+  else if(assignQtys.h>0&&aiSuggestedDate.h)date=aiSuggestedDate.h;
+  else if(assignQtys.d>0&&aiSuggestedDate.d)date=aiSuggestedDate.d;
+  else date=aiSuggestedDate.h||aiSuggestedDate.f||aiSuggestedDate.d;
+  if(date){document.getElementById('assignVenc').value=date;toast('Fecha aplicada');}
+}
 function getQtyStep(){
   // Check current product's unit to decide step
   const sub=document.getElementById('assignSub')?.textContent||'';
