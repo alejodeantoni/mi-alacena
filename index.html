@@ -1240,10 +1240,7 @@ async function sugerirRecetasAll(){
   const lista=all.map(i=>i.nombre+' ('+i.qty+' '+i.unidad+')').join(', ');
   document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">✨ Analizando todo tu stock...</div>';
   try{
-    const text=await callGemini('Tengo en heladera, freezer y despensa: '+lista+'.
-Sugería 3 recetas variadas que puedo hacer. Para cada una: nombre, ingredientes usados, pasos breves, ingrediente opcional que mejoraría.
-SOLO JSON sin backticks:
-[{"nombre":"...","ingredientes_usados":["..."],"pasos":["..."],"opcional":"..."}]');
+    const text=await callGemini('Tengo en heladera, freezer y despensa: '+lista+'.\nSugería 3 recetas variadas. Para cada una: nombre, ingredientes usados, pasos breves, ingrediente opcional.\nSOLO JSON sin backticks:\n[{"nombre":"...","ingredientes_usados":["..."],"pasos":["..."],"opcional":"..."}]');
     const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
     document.getElementById('rec2AllResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">🍳 '+r.nombre+'</div><div class="receta-tags">'+(r.ingredientes_usados||[]).map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div>'+(r.opcional?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>':'')+'</div>').join('');
   }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
@@ -1258,11 +1255,7 @@ async function sugerirRecetasVenc(){
   const resto=getAllStocked().filter(i=>i.qty>0&&!proximos.find(p=>p.id===i.id)).map(i=>i.nombre).join(', ');
   document.getElementById('rec2VencResults').innerHTML='<div class="receta-loading">🔥 Buscando recetas para usar lo que vence...</div>';
   try{
-    const prompt='Tengo estos productos que vencen pronto y debo usar: '+lista+'.
-También tengo disponible: '+resto+'.
-Sugería 3 recetas que aprovechen principalmente los que vencen. Para cada una: nombre, qué productos por vencer usa, pasos breves.
-SOLO JSON sin backticks:
-[{"nombre":"...","usa_por_vencer":["..."],"pasos":["..."],"urgencia":"alta/media"}]';
+    const prompt='Tengo estos productos que vencen pronto: '+lista+'. También tengo: '+resto+'.\nSugería 3 recetas que usen principalmente los que vencen. Para cada una: nombre, productos por vencer usados, pasos breves, urgencia.\nSOLO JSON sin backticks:\n[{"nombre":"...","usa_por_vencer":["..."],"pasos":["..."],"urgencia":"alta/media"}]';
     const text=await callGemini(prompt);
     const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
     document.getElementById('rec2VencResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">'+(r.urgencia==='alta'?'🔴':'🟡')+' '+r.nombre+'</div><div class="receta-tags">'+(r.usa_por_vencer||[]).map(i=>'<span class="receta-tag" style="background:#FCEBEB;color:#791F1F">⏰ '+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div></div>').join('');
@@ -1274,7 +1267,7 @@ async function checkReceta2(){
   const lista=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase()).join(', ');
   document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">🔍 Revisando...</div>';
   try{
-    const text=await callGemini('Quiero hacer: "'+query+'"\nTengo en heladera, freezer y despensa: '+lista+'.\nSOLO JSON sin backticks:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');
+    const text=await callGemini('Quiero hacer: "'+query+'"\nTengo disponible: '+lista+'.\nSOLO JSON sin backticks:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');
     const r=JSON.parse(text.replace(/```json|```/g,'').trim());
     const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);
     document.getElementById('rec2AllResults').innerHTML='<div class="receta-card"><div class="receta-title">'+(r.se_puede_hacer?'✅':'❌')+' '+r.receta+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:10px">'+r.nota+'</div>'+(r.ingredientes||[]).map(ing=>'<div class="falta-row"><span class="falta-nombre">'+ing.nombre+(ing.esencial?'':' <span style="font-size:11px;color:var(--text3)">(opt)</span>')+'</span><span class="falta-estado '+(ing.tengo?'tengo':'falta')+'">'+(ing.tengo?'✓ Tengo':'✗ Falta')+'</span></div>').join('')+(faltanEsenciales.length?'<button class="btn-secondary" style="margin-top:10px" onclick="agregarFaltantes('+JSON.stringify(faltanEsenciales.map(i=>i.nombre))+')">+ Agregar a compras</button>':'')+'</div>';
