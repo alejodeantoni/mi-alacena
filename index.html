@@ -606,7 +606,6 @@ function addHistEntry(catId,accion,delta){
 }
 
 function cleanAutoCompras(){
-  // Remove auto items where stock is now sufficient
   const stock=loadStock();const catalog=loadCatalog();
   let compras=loadCompras();
   const before=compras.length;
@@ -614,47 +613,36 @@ function cleanAutoCompras(){
     if(!c.auto||!c.ref||!c.ref.startsWith('low_'))return true;
     const catId=c.ref.replace('low_','');
     const cat=catalog.find(p=>p.id===catId);if(!cat)return false;
-    // Check if stock is now sufficient in all locations
+    // Only keep if there's a location with qty>0 AND qty<stockMin
     let stillLow=false;
     ['h','f','d'].forEach(l=>{
       const s=stock[catId]?.[l];
-      if(s&&s.stockMin>0&&s.qty<s.stockMin)stillLow=true;
+      if(s&&s.stockMin>0&&s.qty>0&&s.qty<s.stockMin)stillLow=true;
     });
-    return stillLow; // keep if still low, remove if fixed
+    return stillLow;
   });
-  if(compras.length!==before)saveCompras(compras);
+  if(compras.length!==before){
+    localStorage.setItem('compras',JSON.stringify(compras));
+    scheduleSync();
+  }
 }
 
 function checkLowStock(catId){
-  cleanAutoCompras(); // first remove any that are no longer needed
+  cleanAutoCompras();
   const stock=loadStock();const cat=loadCatalog().find(p=>p.id===catId);if(!cat)return;
   const compras=loadCompras();
   const key='low_'+catId;
   if(compras.find(c=>c.ref===key&&!c.done))return;
-  // Find location where item actually exists (qty > 0) but is below minimum
-  // If none have qty > 0, use the first one with stockMin set
-  let triggerLoc=null, triggerNeeded=0;
-  // Prefer locations where product actually exists
+  // ONLY trigger if a location has qty>0 AND qty<stockMin (strictly)
+  let triggerLoc=null,triggerNeeded=0;
   ['h','f','d'].forEach(l=>{
     const s=stock[catId]?.[l];
-    if(!s||!s.stockMin||s.stockMin<=0)return;
-    if(s.qty>0&&s.qty<s.stockMin&&!triggerLoc){
+    if(!s||!s.stockMin||s.stockMin<=0||s.qty<=0)return;
+    if(s.qty<s.stockMin&&!triggerLoc){
       triggerLoc=l;
       triggerNeeded=s.stockMin-s.qty;
     }
   });
-  // Fallback: if all qty=0 but stockMin is set somewhere, use total needed
-  if(!triggerLoc){
-    // Sum all qty across locations, use first loc with stockMin
-    let totalQty=0;
-    ['h','f','d'].forEach(l=>{const s=stock[catId]?.[l];if(s)totalQty+=s.qty||0;});
-    ['h','f','d'].forEach(l=>{
-      const s=stock[catId]?.[l];
-      if(!s||!s.stockMin||s.stockMin<=0||triggerLoc)return;
-      triggerLoc=l;
-      triggerNeeded=Math.max(1,s.stockMin-totalQty);
-    });
-  }
   if(triggerLoc&&triggerNeeded>0){
     const nombre=cat.nombre+' (x'+triggerNeeded+' '+cat.unidad+')';
     compras.push({id:Date.now().toString(),nombre,done:false,origen:triggerLoc,ref:key,auto:true});
