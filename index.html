@@ -33,6 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loc-tab.active.chat{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
 .loc-tab.active.hist{background:#F0F0FE;border-color:#6060C0;color:#303080;font-weight:600}
 .loc-tab.active.rec2{background:#FEF3E2;border-color:#E8A020;color:#8A5000;font-weight:600}
+.loc-tab.active.gstats{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20;font-weight:600}
 .tab-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
 .nav-tabs::-webkit-scrollbar{display:none}
@@ -139,7 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .venc-toggle-btn.active{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
 /* FAB */
 .fab{position:fixed;bottom:24px;right:20px;width:54px;height:54px;border-radius:50%;color:#fff;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:background .2s}
-.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}
+.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}.fab.gstats{background:#2E7D32}
 /* Modals */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
 .modal-bg.open{display:flex}
@@ -226,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.1.4</div>
+  <div class="ver">v8.2.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -241,6 +242,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="loc-tab chat" id="lt-chat" onclick="setLoc('chat')"><span class="loc-tab-icon">💬</span>Chat<span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
   <button class="loc-tab hist" id="lt-hist" onclick="setLoc('hist')"><span class="loc-tab-icon">📊</span>Historial</button>
   <button class="loc-tab" id="lt-rec2" onclick="setLoc('rec2')" style="--tab-bg:#FEF3E2;--tab-border:#E8A020;--tab-color:#8A5000"><span class="loc-tab-icon">🍳</span>Recetas</button>
+  <button class="loc-tab" id="lt-gstats" onclick="setLoc('gstats')"><span class="loc-tab-icon">📈</span>Stats</button>
 </div>
 
 <div class="nav-tabs" id="navTabs">
@@ -369,6 +371,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn-primary" style="background:#E24B4A;margin-top:0" onclick="sugerirRecetasVenc()" id="btnSugerirVenc">🔥 Sugerir con los que vencen</button>
     <div id="rec2VencResults" style="margin-top:10px"></div>
   </div>
+</div>
+
+<!-- STATS GENERALES -->
+<div id="sc-gstats" class="screen" style="display:none">
+  <div id="gstatsContent"></div>
 </div>
 
 <!-- HISTORIAL -->
@@ -792,7 +799,7 @@ function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
 function setLoc(l){
   loc=l;currentCat='Todos';
-  ['h','f','d','cat','comp','chat','hist','rec2'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el)el.className='loc-tab '+x+(x===l?' active '+x:'');
   });
@@ -810,6 +817,7 @@ function setLoc(l){
     else if(l==='comp'){showScreens(['comp']);renderCompras();renderSmartCompras();}
     else if(l==='chat'){showScreens(['chat']);renderChat();lastSeenChat=loadChat().length;localStorage.setItem('lastSeenChat',String(lastSeenChat));updateChatBadge();}
     else if(l==='hist'){showScreens(['hist']);renderHist();}
+    else if(l==='gstats'){showScreens(['gstats']);renderGStats();}
     else if(l==='rec2'){
       showScreens(['rec2']);
       // Select all by default on first open
@@ -821,7 +829,7 @@ function setLoc(l){
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -908,7 +916,7 @@ function initSwipe(uid,catId,l){
 function getItemStep(catId){
   const cat=loadCatalog().find(p=>p.id===catId);
   const u=cat?.unidad||'unid';
-  return(u==='kg'||u==='g'||u==='L'||u==='ml')?0.5:1;
+  return(u==='kg'||u==='g'||u==='L'||u==='ml')?0.1:1;
 }
 function changeQty(catId,l,delta){
   const step=getItemStep(catId);
@@ -988,7 +996,7 @@ function applyAiDate(){if(!aiSuggestedDate)return;document.getElementById('assig
 function getQtyStep(){
   // Check current product's unit to decide step
   const sub=document.getElementById('assignSub')?.textContent||'';
-  return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.5:1;
+  return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.1:1;
 }
 function changeAssignQty(l,delta){
   const step=getQtyStep();
@@ -1362,6 +1370,108 @@ async function checkReceta2(){
   }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error</div>';}
 }
 
+// STATS GENERALES
+function renderGStats(){
+  const hist=loadHist();
+  const all=getAllStocked();
+  const catalog=loadCatalog();
+  const compras=loadCompras();
+
+  // Totales
+  const totalH=getLocItems('h').length, totalF=getLocItems('f').length, totalD=getLocItems('d').length;
+  const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
+  const proxVenc=all.filter(i=>i.venc&&daysLeft(i.venc)>=0&&daysLeft(i.venc)<=7).length;
+  const bajoStock=all.filter(i=>i.stockMin>0&&i.qty<=i.stockMin).length;
+
+  // Consumo por periodo
+  const now=new Date();
+  const hace7=new Date(now);hace7.setDate(hace7.getDate()-7);
+  const hace30=new Date(now);hace30.setDate(hace30.getDate()-30);
+  const cons7=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace7);
+  const cons30=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace30);
+  const totalCons7=cons7.reduce((s,h)=>s+(h.delta||1),0);
+  const totalCons30=cons30.reduce((s,h)=>s+(h.delta||1),0);
+
+  // Top consumidos 30d
+  const consCnt={};
+  cons30.forEach(h=>{consCnt[h.nombre]=(consCnt[h.nombre]||0)+(h.delta||1);});
+  const topCons=Object.entries(consCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxC=topCons[0]?.[1]||1;
+
+  // Top categorías por stock
+  const catCnt={};all.forEach(i=>{catCnt[i.cat]=(catCnt[i.cat]||0)+i.qty;});
+  const topCat=Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxCat=topCat[0]?.[1]||1;
+
+  // Compras completadas
+  const comprasHechas=hist.filter(h=>h.accion==='comprado'&&new Date(h.ts)>=hace30).length;
+
+  // Consumo por día (últimos 14 días)
+  const dias14=[];
+  for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);dias14.push(d);}
+  const consPorDia=dias14.map(d=>{
+    const key=d.toISOString().split('T')[0];
+    return hist.filter(h=>h.accion==='consumido'&&h.ts.startsWith(key)).reduce((s,h)=>s+(h.delta||1),0);
+  });
+  const maxDia=Math.max(...consPorDia,1);
+
+  document.getElementById('gstatsContent').innerHTML=
+    // Header stats
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'+
+      '<div class="stat h"><div class="stat-val h">'+totalH+'</div><div class="stat-lbl">🧊 Heladera</div></div>'+
+      '<div class="stat f"><div class="stat-val f">'+totalF+'</div><div class="stat-lbl">❄️ Freezer</div></div>'+
+      '<div class="stat d"><div class="stat-val d">'+totalD+'</div><div class="stat-lbl">🫙 Despensa</div></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+      '<div class="stat cat"><div class="stat-val cat">'+catalog.length+'</div><div class="stat-lbl">📋 En catálogo</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(vencidos>0?'color:#A32D2D':'')+'">'+vencidos+'</div><div class="stat-lbl">⚠️ Vencidos</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(proxVenc>0?'color:#BA7517':'')+'">'+proxVenc+'</div><div class="stat-lbl">⏰ Vencen en 7d</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(bajoStock>0?'color:#72243E':'')+'">'+bajoStock+'</div><div class="stat-lbl">📉 Stock bajo</div></div>'+
+    '</div>'+
+    // Consumo
+    '<div class="card"><div class="section-lbl">Consumo</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'+
+        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons7.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 7 días</div></div>'+
+        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons30.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 30 días</div></div>'+
+      '</div>'+
+      // Mini bar chart last 14 days
+      '<div style="margin-top:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase">Consumo diario (14 días)</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:3px;height:50px">'+
+      consPorDia.map((v,i)=>{
+        const h=maxDia>0?Math.max(4,Math.round(v/maxDia*46)):4;
+        const d=dias14[i];const isToday=d.toDateString()===now.toDateString();
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'+
+          '<div style="width:100%;height:'+h+'px;background:'+(isToday?'#378ADD':v>0?'#1D9E75':'var(--bg4)')+';border-radius:3px 3px 0 0" title="'+v+'"></div>'+
+        '</div>';
+      }).join('')+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--text3)">'+
+        '<span>'+fmtDay(dias14[0].toISOString())+'</span><span>Hoy</span>'+
+      '</div></div>'+
+    '</div>'+
+    // Compras
+    '<div class="card"><div class="section-lbl">Compras (30 días)</div>'+
+      '<div style="font-size:22px;font-weight:700;color:#8A3A8A;margin-top:6px">'+comprasHechas+'</div>'+
+      '<div style="font-size:12px;color:var(--text2)">ítems marcados como comprados</div>'+
+    '</div>'+
+    // Top consumidos
+    (topCons.length?'<div class="card"><div class="section-lbl">Más consumidos (30 días)</div>'+
+      topCons.map(([n,v])=>
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
+        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
+        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#1D9E75;width:'+Math.round(v/maxC*100)+'%"></div></div>'+
+        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
+      ).join('')+'</div>':'')+
+    // Top categorías
+    (topCat.length?'<div class="card"><div class="section-lbl">Stock por categoría</div>'+
+      topCat.map(([n,v])=>
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
+        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
+        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#378ADD;width:'+Math.round(v/maxCat*100)+'%"></div></div>'+
+        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
+      ).join('')+'</div>':'');
+}
+
 // HISTORIAL
 function renderHist(){
   const FILTERS=['todos','agregado','consumido','comprado','eliminado'];
@@ -1370,7 +1480,11 @@ function renderHist(){
   let hist=loadHist();if(histFilter!=='todos')hist=hist.filter(h=>h.accion===histFilter);
   const el=document.getElementById('histList');
   if(!hist.length){el.innerHTML='<div class="empty">Sin historial aún</div>';return;}
-  el.innerHTML=hist.slice(0,80).map(h=>'<div class="hist-item"><div class="hist-icon" style="background:'+(COLORS[h.cat]||'#F1EFE8')+'">'+(ALL_CATS[h.cat]||'📦')+'</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+h.nombre+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+fmtDay(h.ts)+' · por <span style="color:'+(h.byColor||'#666')+'">'+h.by+'</span></div></div><span class="hist-action '+h.accion+'">'+(h.accion==='consumido'?'Consumido':h.accion==='agregado'?'Agregado':h.accion==='comprado'?'Comprado':'Eliminado')+'</span></div>').join('');
+  el.innerHTML=hist.slice(0,80).map(h=>{
+  const labels={consumido:'Consumido',agregado:'Agregado',comprado:'Comprado',eliminado:'Eliminado',movido:'Movido'};
+  const cantStr=(h.delta&&h.delta>0)?' · '+h.delta+' '+(h.unidad||'unid'):'';
+  return '<div class="hist-item"><div class="hist-icon" style="background:'+(COLORS[h.cat]||'#F1EFE8')+'">'+(ALL_CATS[h.cat]||'📦')+'</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+h.nombre+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+fmtDay(h.ts)+cantStr+' · por <span style="color:'+(h.byColor||'#666')+'">'+h.by+'</span></div></div><span class="hist-action '+h.accion+'">'+(labels[h.accion]||h.accion)+'</span></div>';
+}).join('');
 }
 function setHistFilter(f){histFilter=f;renderHist();}
 
