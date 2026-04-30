@@ -226,7 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.1.1</div>
+  <div class="ver">v8.1.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -432,6 +432,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="field"><label>Nota (opcional)</label><textarea id="fNota" placeholder="Sin TACC, marca preferida..."></textarea></div>
+  <div class="field">
+    <label>Foto del producto (opcional)</label>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+      <div id="addImgPreview" style="width:60px;height:60px;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0">📦</div>
+      <label style="display:inline-block;padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        📷 Sacar o elegir foto
+        <input type="file" accept="image/*" capture="environment" onchange="handleAddModalPhoto(this)" style="display:none">
+      </label>
+    </div>
+  </div>
   <button class="btn-primary" onclick="saveCatalogItem()">Agregar al catálogo</button>
   <button class="btn-secondary" onclick="closeAddModal()">Cancelar</button>
 </div>
@@ -992,6 +1002,16 @@ function saveAssignment(){
 function closeAssignModal(){document.getElementById('assignModalBg').classList.remove('open');}
 
 // CATALOG EDIT
+function handleAddModalPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentProductImg=e.target.result;
+    const prev=document.getElementById('addImgPreview');
+    if(prev)prev.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+  };
+  reader.readAsDataURL(file);
+}
 function handleEditCatPhoto(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1044,7 +1064,7 @@ function openAddModal(){
   document.getElementById('barcodePreview').style.display='none';document.getElementById('manualBarcodeWrap').style.display='none';
   document.getElementById('barcodeStatus').className='ai-status';document.getElementById('uploadPreview').style.display='none';
   document.getElementById('uploadLabel').style.display='block';document.getElementById('aiStatus').className='ai-status';
-  currentProductImg='';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
+  currentProductImg='';const aip=document.getElementById('addImgPreview');if(aip)aip.innerHTML='📦';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
 }
 function closeAddModal(){document.getElementById('addModalBg').classList.remove('open');}
 function closeAddModalBg(e){if(e.target===document.getElementById('addModalBg'))closeAddModal();}
@@ -1055,7 +1075,10 @@ function saveCatalogItem(){
   const cat=loadCatalog();
   if(cat.find(p=>p.nombre.toLowerCase()===nombre.toLowerCase())&&!confirm('"'+nombre+'" ya existe. ¿Agregar igual?'))return;
   const newItem={id:Date.now().toString(),nombre,cat:document.getElementById('fCat').value,unidad:document.getElementById('fUnidad').value,nota:document.getElementById('fNota').value.trim()||null,img:currentProductImg||null,reminder:0};
-  cat.push(newItem);saveCatalog(cat);closeAddModal();setLoc('cat');renderCatalog();toast('Agregado. Tocá 📍 para asignar.');
+  cat.push(newItem);saveCatalog(cat);closeAddModal();
+  // Open assign modal immediately
+  if(['h','f','d'].includes(loc))renderAll();else renderCatalog();
+  setTimeout(()=>openAssignModal(newItem.id),200);
 }
 
 // BARCODE
