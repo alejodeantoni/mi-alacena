@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.2.0</div>
+  <div class="ver">v8.2.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -710,7 +710,7 @@ function checkLowStock(catId){
     if(!s||!s.stockMin||s.stockMin<=0||s.qty<=0)return;
     if(s.qty<s.stockMin&&!triggerLoc){
       triggerLoc=l;
-      triggerNeeded=s.stockMin-s.qty;
+      triggerNeeded=parseFloat((s.stockMin-s.qty).toFixed(1));
     }
   });
   if(triggerLoc&&triggerNeeded>0){
@@ -923,7 +923,7 @@ function changeQty(catId,l,delta){
   const stock=loadStock();
   if(!stock[catId])stock[catId]={};
   if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
-  stock[catId][l].qty=Math.max(0,Math.round((stock[catId][l].qty+delta*step)*100)/100);
+  stock[catId][l].qty=Math.max(0,parseFloat((stock[catId][l].qty+delta*step).toFixed(1)));
   const p=getProfile();
   stock[catId][l].lastBy=p?.name||null;
   saveStock(stock);
@@ -1000,7 +1000,7 @@ function getQtyStep(){
 }
 function changeAssignQty(l,delta){
   const step=getQtyStep();
-  assignQtys[l]=Math.max(0,Math.round((assignQtys[l]+delta*step)*100)/100);
+  assignQtys[l]=Math.max(0,parseFloat((assignQtys[l]+delta*step).toFixed(1)));
   document.getElementById('aq'+l).textContent=assignQtys[l];
 }
 function saveAssignment(){
