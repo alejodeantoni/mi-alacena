@@ -226,7 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.1.3</div>
+  <div class="ver">v8.1.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -506,7 +506,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="loc-assign-row"><div class="loc-assign-icon">🫙</div><div class="loc-assign-name">Despensa</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('d',-1)">−</button><span class="qty-num" id="aqd">0</span><button class="qty-btn" onclick="changeAssignQty('d',1)">+</button></div></div>
   </div>
   <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
-  <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0"></div>
+  <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
   <button class="btn-primary" style="background:#378ADD" onclick="saveAssignment()">Guardar</button>
   <button class="btn-secondary" onclick="closeAssignModal()">Cancelar</button>
 </div>
@@ -905,11 +905,17 @@ function initSwipe(uid,catId,l){
   card.addEventListener('touchend',()=>{drag=false;if(cx<-65){card.style.transition='transform .2s';card.style.transform='translateX(-100%)';setTimeout(()=>removeFromLoc(catId,l),200);}else{card.style.transition='transform .2s';card.style.transform='translateX(0)';}cx=0;});
 }
 
+function getItemStep(catId){
+  const cat=loadCatalog().find(p=>p.id===catId);
+  const u=cat?.unidad||'unid';
+  return(u==='kg'||u==='g'||u==='L'||u==='ml')?0.5:1;
+}
 function changeQty(catId,l,delta){
+  const step=getItemStep(catId);
   const stock=loadStock();
   if(!stock[catId])stock[catId]={};
   if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
-  stock[catId][l].qty=Math.max(0,stock[catId][l].qty+delta);
+  stock[catId][l].qty=Math.max(0,Math.round((stock[catId][l].qty+delta*step)*100)/100);
   const p=getProfile();
   stock[catId][l].lastBy=p?.name||null;
   saveStock(stock);
@@ -979,7 +985,16 @@ function openAssignModal(catId){
   document.getElementById('assignModalBg').classList.add('open');
 }
 function applyAiDate(){if(!aiSuggestedDate)return;document.getElementById('assignVenc').value=assignQtys.f>0?aiSuggestedDate.f:aiSuggestedDate.h;toast('Fecha aplicada');}
-function changeAssignQty(l,delta){assignQtys[l]=Math.max(0,assignQtys[l]+delta);document.getElementById('aq'+l).textContent=assignQtys[l];}
+function getQtyStep(){
+  // Check current product's unit to decide step
+  const sub=document.getElementById('assignSub')?.textContent||'';
+  return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.5:1;
+}
+function changeAssignQty(l,delta){
+  const step=getQtyStep();
+  assignQtys[l]=Math.max(0,Math.round((assignQtys[l]+delta*step)*100)/100);
+  document.getElementById('aq'+l).textContent=assignQtys[l];
+}
 function saveAssignment(){
   const stock=loadStock();if(!stock[assigningCatId])stock[assigningCatId]={};
   const venc=document.getElementById('assignVenc').value||null;
