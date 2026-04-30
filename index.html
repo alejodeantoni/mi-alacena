@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.2.2</div>
+  <div class="ver">v8.2.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -430,6 +430,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="row2">
     <div class="field"><label>Categoría</label><select id="fCat">
       <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
+      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
       <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
       <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
       <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
@@ -463,6 +464,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="row2">
     <div class="field"><label>Categoría</label><select id="ecCat">
       <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
+      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
       <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
       <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
       <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
@@ -541,13 +543,25 @@ const JSONBIN_BIN = '69f2b93736566621a809f9d7';
 // ===================================
 
 const PROFILE_COLORS=['#378ADD','#E24B4A','#3A7A1E','#BA7517','#5B63D3','#C87820','#8A3A8A','#1D9E75','#666','#1a1a18'];
-const CATS_H={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Otros':'📦'};
-const CATS_F={'Carnes y aves':'🥩','Pescados':'🐟','Congelados':'🧊','Verduras':'🥦','Frutas':'🍎','Lácteos':'🥛','Otros':'📦'};
+const CATS_H={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Fiambres al vacío':'🧀','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Otros':'📦'};
+const CATS_F={'Carnes y aves':'🥩','Pescados':'🐟','Congelados':'🧊','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Lácteos':'🥛','Fiambres al vacío':'🧀','Otros':'📦'};
 const CATS_D={'Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Bebidas':'🥤','Limpieza':'🧹','Otros':'📦'};
-const ALL_CATS={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Congelados':'🧊','Limpieza':'🧹','Otros':'📦'};
-const COLORS={'Lácteos':'#E6F1FB','Carnes y aves':'#FCEBEB','Pescados':'#E1F5EE','Fiambres':'#FAECE7','Verduras':'#EAF3DE','Frutas':'#FAEEDA','Bebidas':'#E1F5EE','Harinas y cereales':'#FAEEDA','Arroz y pastas':'#FAECE7','Aceites':'#EAF3DE','Conservas':'#E6F1FB','Snacks':'#FBEAF0','Especias':'#FCEBEB','Congelados':'#EEEDFE','Limpieza':'#EEEDFE','Otros':'#F1EFE8'};
-const FRESH_CATS=['Carnes y aves','Pescados','Fiambres','Lácteos','Verduras','Frutas','Arroz y pastas','Conservas'];
-const DURACION={'Carnes y aves':{h:3,f:90},'Pescados':{h:2,f:60},'Fiambres':{h:7,f:30},'Lácteos':{h:7,f:30},'Verduras':{h:5,f:30},'Frutas':{h:7,f:60},'Arroz y pastas':{h:null,f:null,d:730},'Conservas':{h:null,f:null,d:1095}};
+const ALL_CATS={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Fiambres al vacío':'🧀','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Congelados':'🧊','Limpieza':'🧹','Otros':'📦'};
+const COLORS={'Lácteos':'#E6F1FB','Carnes y aves':'#FCEBEB','Pescados':'#E1F5EE','Fiambres':'#FAECE7','Fiambres al vacío':'#FBEAF0','Pastas caseras':'#FEF3E2','Salsas':'#FEF0E0','Verduras':'#EAF3DE','Frutas':'#FAEEDA','Bebidas':'#E1F5EE','Harinas y cereales':'#FAEEDA','Arroz y pastas':'#FAECE7','Aceites':'#EAF3DE','Conservas':'#E6F1FB','Snacks':'#FBEAF0','Especias':'#FCEBEB','Congelados':'#EEEDFE','Limpieza':'#EEEDFE','Otros':'#F1EFE8'};
+const FRESH_CATS=['Carnes y aves','Pescados','Fiambres','Lácteos','Verduras','Frutas','Arroz y pastas','Conservas','Pastas caseras','Salsas','Fiambres al vacío'];
+const DURACION={
+  'Carnes y aves':{h:3,f:90},
+  'Pescados':{h:2,f:60},
+  'Fiambres':{h:7,f:30},
+  'Fiambres al vacío':{h:21,f:60},
+  'Lácteos':{h:7,f:30},
+  'Verduras':{h:5,f:30},
+  'Frutas':{h:7,f:60},
+  'Arroz y pastas':{h:null,f:null,d:730},
+  'Pastas caseras':{h:3,f:90},
+  'Salsas':{h:5,f:180,d:null},
+  'Conservas':{h:null,f:null,d:1095}
+};
 
 let loc='h',nav='inv',sortByVenc=false,vencView='cur';
 let currentCat='Todos',catCatFilter='Todos',histFilter='todos',compView='list';
