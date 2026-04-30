@@ -32,6 +32,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loc-tab.active.comp{background:#F5EAF3;border-color:#8A3A8A;color:#5A1A5A;font-weight:600}
 .loc-tab.active.chat{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
 .loc-tab.active.hist{background:#F0F0FE;border-color:#6060C0;color:#303080;font-weight:600}
+.loc-tab.active.rec2{background:#FEF3E2;border-color:#E8A020;color:#8A5000;font-weight:600}
 .tab-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
 .nav-tabs::-webkit-scrollbar{display:none}
@@ -138,7 +139,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .venc-toggle-btn.active{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
 /* FAB */
 .fab{position:fixed;bottom:24px;right:20px;width:54px;height:54px;border-radius:50%;color:#fff;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:background .2s}
-.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}
+.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}
 /* Modals */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
 .modal-bg.open{display:flex}
@@ -225,7 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.0.5</div>
+  <div class="ver">v8.1.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -239,6 +240,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="loc-tab comp" id="lt-comp" onclick="setLoc('comp')"><span class="loc-tab-icon">🛒</span>Compras</button>
   <button class="loc-tab chat" id="lt-chat" onclick="setLoc('chat')"><span class="loc-tab-icon">💬</span>Chat<span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
   <button class="loc-tab hist" id="lt-hist" onclick="setLoc('hist')"><span class="loc-tab-icon">📊</span>Historial</button>
+  <button class="loc-tab" id="lt-rec2" onclick="setLoc('rec2')" style="--tab-bg:#FEF3E2;--tab-border:#E8A020;--tab-color:#8A5000"><span class="loc-tab-icon">🍳</span>Recetas</button>
 </div>
 
 <div class="nav-tabs" id="navTabs">
@@ -329,6 +331,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <textarea class="chat-input" id="chatInput" placeholder="Escribí un mensaje..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}"></textarea>
       <button class="chat-send" onclick="sendChatMsg()">➤</button>
     </div>
+  </div>
+</div>
+
+<!-- RECETAS TAB -->
+<div id="sc-rec2" class="screen" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="rec2-tab-all" class="btn-primary" style="flex:1;margin-top:0;background:#E8A020;padding:10px;font-size:13px" onclick="setRec2View('all')">🍳 Con todo el stock</button>
+    <button id="rec2-tab-venc" class="btn-secondary" style="flex:1;margin-top:0;padding:10px;font-size:13px" onclick="setRec2View('venc')">⏰ Por vencer</button>
+  </div>
+  <div id="rec2AllView">
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">¿Qué puedo cocinar con todo lo que tengo?</div>
+      <button class="btn-primary" style="background:#E8A020" onclick="sugerirRecetasAll()" id="btnSugerirAll">✨ Sugerir recetas</button>
+    </div>
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">¿Qué me falta para una receta?</div>
+      <div style="display:flex;gap:8px">
+        <input id="recetaQuery2" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" placeholder="Ej: milanesas, risotto..." onkeydown="if(event.key==='Enter')checkReceta2()">
+        <button onclick="checkReceta2()" style="padding:9px 14px;border:none;border-radius:10px;background:#E8A020;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Ver</button>
+      </div>
+    </div>
+    <div id="rec2AllResults"></div>
+  </div>
+  <div id="rec2VencView" style="display:none">
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:6px">Productos próximos a vencer</div>
+      <div id="rec2VencList" style="font-size:13px;color:var(--text2)"></div>
+    </div>
+    <button class="btn-primary" style="background:#E24B4A;margin-top:0" onclick="sugerirRecetasVenc()" id="btnSugerirVenc">🔥 Sugerir con los que vencen</button>
+    <div id="rec2VencResults" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -743,7 +775,7 @@ function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
 function setLoc(l){
   loc=l;currentCat='Todos';
-  ['h','f','d','cat','comp','chat','hist'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el)el.className='loc-tab '+x+(x===l?' active '+x:'');
   });
@@ -761,12 +793,13 @@ function setLoc(l){
     else if(l==='comp'){showScreens(['comp']);renderCompras();renderSmartCompras();}
     else if(l==='chat'){showScreens(['chat']);renderChat();lastSeenChat=loadChat().length;localStorage.setItem('lastSeenChat',String(lastSeenChat));updateChatBadge();}
     else if(l==='hist'){showScreens(['hist']);renderHist();}
+    else if(l==='rec2'){showScreens(['rec2']);renderRec2();}
   }
   if(invLocs.includes(l))renderAll();
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -1177,6 +1210,75 @@ function updateChatBadge(){
   const badge=document.getElementById('chatBadge');
   if(newMsgs>0&&loc!=='chat'){badge.style.display='flex';badge.textContent=newMsgs>9?'9+':newMsgs;}
   else badge.style.display='none';
+}
+
+// RECETAS TAB
+let rec2View='all';
+function setRec2View(v){
+  rec2View=v;
+  document.getElementById('rec2-tab-all').className='btn-primary'+(v==='all'?'':' btn-secondary');
+  document.getElementById('rec2-tab-all').style.background=v==='all'?'#E8A020':'transparent';
+  document.getElementById('rec2-tab-all').style.color=v==='all'?'#fff':'var(--text2)';
+  document.getElementById('rec2-tab-venc').className='btn-'+(v==='venc'?'primary':'secondary');
+  document.getElementById('rec2-tab-venc').style.background=v==='venc'?'#E24B4A':'transparent';
+  document.getElementById('rec2-tab-venc').style.color=v==='venc'?'#fff':'var(--text2)';
+  document.getElementById('rec2AllView').style.display=v==='all'?'block':'none';
+  document.getElementById('rec2VencView').style.display=v==='venc'?'block':'none';
+  if(v==='venc')renderVencList();
+}
+function renderRec2(){setRec2View(rec2View);}
+function renderVencList(){
+  const all=getAllStocked().filter(i=>i.venc);
+  const proximos=all.filter(i=>{const dl=daysLeft(i.venc);return dl!==null&&dl<=7&&dl>=0;}).sort((a,b)=>new Date(a.venc)-new Date(b.venc));
+  const el=document.getElementById('rec2VencList');
+  if(!proximos.length){el.innerHTML='No hay productos próximos a vencer (en 7 días).';return;}
+  el.innerHTML=proximos.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg4)"><span>'+( ALL_CATS[i.cat]||'📦')+'</span><span style="flex:1;font-weight:500;color:var(--text)">'+i.nombre+'</span>'+getBadge(i.venc)+'</div>').join('');
+}
+async function sugerirRecetasAll(){
+  const btn=document.getElementById('btnSugerirAll');btn.disabled=true;btn.textContent='Pensando...';
+  const all=getAllStocked().filter(i=>i.qty>0);
+  const lista=all.map(i=>i.nombre+' ('+i.qty+' '+i.unidad+')').join(', ');
+  document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">✨ Analizando todo tu stock...</div>';
+  try{
+    const text=await callGemini('Tengo en heladera, freezer y despensa: '+lista+'.
+Sugería 3 recetas variadas que puedo hacer. Para cada una: nombre, ingredientes usados, pasos breves, ingrediente opcional que mejoraría.
+SOLO JSON sin backticks:
+[{"nombre":"...","ingredientes_usados":["..."],"pasos":["..."],"opcional":"..."}]');
+    const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('rec2AllResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">🍳 '+r.nombre+'</div><div class="receta-tags">'+(r.ingredientes_usados||[]).map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div>'+(r.opcional?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>':'')+'</div>').join('');
+  }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
+  btn.disabled=false;btn.textContent='✨ Sugerir recetas';
+}
+async function sugerirRecetasVenc(){
+  const btn=document.getElementById('btnSugerirVenc');btn.disabled=true;btn.textContent='Pensando...';
+  const all=getAllStocked().filter(i=>i.venc);
+  const proximos=all.filter(i=>{const dl=daysLeft(i.venc);return dl!==null&&dl<=7&&dl>=0;});
+  if(!proximos.length){toast('No hay productos próximos a vencer');btn.disabled=false;btn.textContent='🔥 Sugerir con los que vencen';return;}
+  const lista=proximos.map(i=>i.nombre+' (vence en '+daysLeft(i.venc)+' días)').join(', ');
+  const resto=getAllStocked().filter(i=>i.qty>0&&!proximos.find(p=>p.id===i.id)).map(i=>i.nombre).join(', ');
+  document.getElementById('rec2VencResults').innerHTML='<div class="receta-loading">🔥 Buscando recetas para usar lo que vence...</div>';
+  try{
+    const prompt='Tengo estos productos que vencen pronto y debo usar: '+lista+'.
+También tengo disponible: '+resto+'.
+Sugería 3 recetas que aprovechen principalmente los que vencen. Para cada una: nombre, qué productos por vencer usa, pasos breves.
+SOLO JSON sin backticks:
+[{"nombre":"...","usa_por_vencer":["..."],"pasos":["..."],"urgencia":"alta/media"}]';
+    const text=await callGemini(prompt);
+    const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('rec2VencResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">'+(r.urgencia==='alta'?'🔴':'🟡')+' '+r.nombre+'</div><div class="receta-tags">'+(r.usa_por_vencer||[]).map(i=>'<span class="receta-tag" style="background:#FCEBEB;color:#791F1F">⏰ '+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div></div>').join('');
+  }catch(e){document.getElementById('rec2VencResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
+  btn.disabled=false;btn.textContent='🔥 Sugerir con los que vencen';
+}
+async function checkReceta2(){
+  const query=document.getElementById('recetaQuery2').value.trim();if(!query)return;
+  const lista=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase()).join(', ');
+  document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">🔍 Revisando...</div>';
+  try{
+    const text=await callGemini('Quiero hacer: "'+query+'"\nTengo en heladera, freezer y despensa: '+lista+'.\nSOLO JSON sin backticks:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');
+    const r=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);
+    document.getElementById('rec2AllResults').innerHTML='<div class="receta-card"><div class="receta-title">'+(r.se_puede_hacer?'✅':'❌')+' '+r.receta+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:10px">'+r.nota+'</div>'+(r.ingredientes||[]).map(ing=>'<div class="falta-row"><span class="falta-nombre">'+ing.nombre+(ing.esencial?'':' <span style="font-size:11px;color:var(--text3)">(opt)</span>')+'</span><span class="falta-estado '+(ing.tengo?'tengo':'falta')+'">'+(ing.tengo?'✓ Tengo':'✗ Falta')+'</span></div>').join('')+(faltanEsenciales.length?'<button class="btn-secondary" style="margin-top:10px" onclick="agregarFaltantes('+JSON.stringify(faltanEsenciales.map(i=>i.nombre))+')">+ Agregar a compras</button>':'')+'</div>';
+  }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error</div>';}
 }
 
 // HISTORIAL
