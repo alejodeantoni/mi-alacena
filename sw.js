@@ -1,5 +1,6 @@
-const CACHE = 'alacena-v7';
-const ASSETS = ['/', '/index.html'];
+const CACHE = 'alacena-v8';
+const BASE = '/mi-alacena/';
+const ASSETS = [BASE, BASE+'index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
