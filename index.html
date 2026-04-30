@@ -1253,7 +1253,7 @@ function renderIngList(){
     html2+='<div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:8px 0 4px">'+locLabel[l]+'</div>';
     html2+=byLoc[l].map(i=>{
       const checked=selectedIngredients.has(i.id+'_'+l);
-      return '<div onclick="toggleIngredient(''+i.id+'',''+l+'')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg4);cursor:pointer">'+
+      return '<div onclick="toggleIngredient(\''+i.id+'\',\''+l+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg4);cursor:pointer">'+
         '<div style="width:22px;height:22px;border:2px solid '+(checked?'#E8A020':' var(--border2)')+';border-radius:6px;background:'+(checked?'#E8A020':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:#fff">'+(checked?'✓':'')+'</div>'+
         '<div style="font-size:14px;color:var(--text);flex:1">'+i.nombre+'</div>'+
         '<div style="font-size:12px;color:var(--text3)">'+i.qty+' '+i.unidad+'</div>'+
