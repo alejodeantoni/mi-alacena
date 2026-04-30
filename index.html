@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.2.3</div>
+  <div class="ver">v8.3.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
   <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -516,6 +516,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
+  <div class="field" style="margin-top:4px">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer" onclick="toggleAbierto()">
+      <div id="abiertoCheck" style="width:24px;height:24px;border:2px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"></div>
+      <div><div style="font-size:14px;font-weight:500;color:var(--text)">📦 Paquete abierto</div><div style="font-size:12px;color:var(--text2)">La IA sugiere nueva fecha de vencimiento</div></div>
+    </div>
+    <div id="abiertoDateSuggest" style="display:none;margin-top:8px;background:#FEF3E2;border:1px solid #E8A020;border-radius:10px;padding:10px;font-size:13px;color:#8A5000">
+      <strong>⏰ Vence abierto:</strong> <span id="abiertoDateText">calculando...</span>
+      <br><button onclick="applyAbiertoDate()" style="margin-top:6px;padding:5px 12px;border:1px solid #E8A020;border-radius:8px;background:transparent;color:#8A5000;font-size:12px;cursor:pointer;font-weight:500">Usar esta fecha</button>
+    </div>
+  </div>
   <button class="btn-primary" style="background:#378ADD" onclick="saveAssignment()">Guardar</button>
   <button class="btn-secondary" onclick="closeAssignModal()">Cancelar</button>
 </div>
@@ -535,9 +545,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="toast-wrap" id="toastWrap"></div>
 
+<!-- IMAGE VIEWER -->
+<div id="imgViewerBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;align-items:center;justify-content:center" onclick="closeImgViewer()">
+  <img id="imgViewerImg" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain">
+  <button onclick="event.stopPropagation();closeImgViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer">✕</button>
+</div>
 <script>
 // ===== REEMPLAZÁ CON TUS KEYS =====
-const GEMINI_KEY = 'AIzaSyBJxY-qY8Pz_sy924fRpRi40_cmEtTAoSM';
+const GEMINI_KEY = 'AIzaSyCplVZQB3FnJqHG6pC-6PcmjyflM2-boac';
 const JSONBIN_KEY = '$2a$10$hHnQkQ1fwFzQ4o4jBoxpWu4SlHFLM7P/G2tjwH5PlHj0BzEX2gyDO';
 const JSONBIN_BIN = '69f2b93736566621a809f9d7';
 // ===================================
@@ -897,7 +912,7 @@ function renderInventory(){
     const isLow=item.stockMin>0&&item.qty<=item.stockMin;const curLoc=item.loc||loc;
     return '<div class="swipe-outer" id="so-'+item.id+'_'+curLoc+'"><div class="swipe-reveal">🗑</div>'+
       '<div class="swipe-card" id="swc-'+item.id+'_'+curLoc+'"><div class="item-row">'+
-      '<div class="item-icon" style="background:'+(COLORS[item.cat]||'#F1EFE8')+'">'+(item.img?'<img src="'+item.img+'" alt="">':(CATS[item.cat]||ALL_CATS[item.cat]||'📦'))+'</div>'+
+      '<div class="item-icon" style="background:'+(COLORS[item.cat]||'#F1EFE8')+'">'+(item.img?'<img src="'+item.img+'" alt="" onclick="openImgViewer(this.src)" style="cursor:zoom-in">':(CATS[item.cat]||ALL_CATS[item.cat]||'📦'))+'</div>'+
       '<div class="item-info">'+
         '<div class="item-name">'+item.nombre+'</div>'+
         '<div class="item-meta">'+
@@ -1008,6 +1023,9 @@ function openAssignModal(catId){
     document.getElementById('aiDateText').textContent=txt;
     aiEl.style.display='block';
   } else {aiEl.style.display='none';}
+  isAbierto=false;abiertoDateSuggested=null;
+  const ac=document.getElementById('abiertoCheck');if(ac){ac.style.background='transparent';ac.style.borderColor='var(--border2)';ac.textContent='';}
+  const ads=document.getElementById('abiertoDateSuggest');if(ads)ads.style.display='none';
   document.getElementById('assignModalBg').classList.add('open');
 }
 function applyAiDate(){
@@ -1048,6 +1066,26 @@ function saveAssignment(){
   addHistEntry(assigningCatId,'agregado',0);
   closeAssignModal();renderAll();renderCatalog();renderCompras();toast('Guardado!');
 }
+let isAbierto=false,abiertoDateSuggested=null;
+function toggleAbierto(){
+  isAbierto=!isAbierto;
+  const c=document.getElementById('abiertoCheck');
+  c.style.background=isAbierto?'#E8A020':'transparent';c.style.borderColor=isAbierto?'#E8A020':'var(--border2)';c.textContent=isAbierto?'✓':'';
+  if(isAbierto)calcAbiertoDate();else document.getElementById('abiertoDateSuggest').style.display='none';
+}
+async function calcAbiertoDate(){
+  const cat=loadCatalog().find(p=>p.id===assigningCatId);if(!cat)return;
+  const sug=document.getElementById('abiertoDateSuggest');const dt=document.getElementById('abiertoDateText');
+  sug.style.display='block';dt.textContent='calculando...';
+  try{
+    const l=assignQtys.f>0?'freezer':assignQtys.h>0?'heladera':'despensa';
+    const text=await callGemini('El producto "'+cat.nombre+'" categoría "'+cat.cat+'" fue abierto y está en '+l+'. ¿Cuántos días dura una vez abierto? Respondé SOLO con un número entero.');
+    const dias=parseInt(text.trim().replace(/\D/g,''));
+    if(dias>0){abiertoDateSuggested=addDays(dias);dt.textContent='~'+dias+' días ('+new Date(abiertoDateSuggested+'T00:00:00').toLocaleDateString('es-AR')+')';}
+    else dt.textContent='No se pudo calcular';
+  }catch(e){dt.textContent='Error al consultar IA';}
+}
+function applyAbiertoDate(){if(abiertoDateSuggested){document.getElementById('assignVenc').value=abiertoDateSuggested;toast('Fecha aplicada');}}
 function closeAssignModal(){document.getElementById('assignModalBg').classList.remove('open');}
 
 // CATALOG EDIT
@@ -1526,6 +1564,8 @@ const NOTIF_OK=typeof Notification!=='undefined';
 function renderNotifBanner(){const el=document.getElementById('notifBanner');if(!NOTIF_OK||Notification.permission==='granted'){el.innerHTML='';return;}el.innerHTML='<div class="notif-banner">🔔 <span>Activá notificaciones</span><button onclick="requestNotif()">Activar</button></div>';}
 async function requestNotif(){if(!NOTIF_OK)return;const p=await Notification.requestPermission();if(p==='granted'){toast('Notificaciones activadas!');renderNotifBanner();}}
 
+function openImgViewer(src){const bg=document.getElementById("imgViewerBg");document.getElementById("imgViewerImg").src=src;bg.style.display="flex";}
+function closeImgViewer(){document.getElementById("imgViewerBg").style.display="none";}
 function toast(msg){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='toast';el.textContent=msg;wrap.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},2200);}
 
 // Clean up bad stockMin data on load (stockMin set on locations with qty=0)
