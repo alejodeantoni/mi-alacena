@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#378ADD">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Alacena">
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi Alacena</title>
+<style>
+:root{--bg:#f5f5f0;--bg3:#f8f8f4;--bg4:#f0f0e8;--border:#e0e0d8;--border2:#d0d0c8;--text:#1a1a18;--text2:#666;--text3:#aaa;--card:#fff;--modal:#fff;}
+[data-theme=dark]{--bg:#18181a;--bg3:#2c2c30;--bg4:#34343a;--border:#38383e;--border2:#44444c;--text:#f0f0e8;--text2:#aaa;--text3:#666;--card:#242428;--modal:#242428;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:1rem 1rem 0}
+.app-header{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+.app-title{font-size:17px;font-weight:700;flex:1}
+.icon-btn-sm{width:34px;height:34px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ver{font-size:11px;color:var(--text3);background:var(--bg4);padding:2px 8px;border-radius:100px}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
+.loc-tabs{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
+.loc-tabs::-webkit-scrollbar{display:none}
+.loc-tab{flex:1;min-width:60px;padding:8px 4px;border:1px solid var(--border2);border-radius:12px;background:transparent;cursor:pointer;text-align:center;font-size:11px;color:var(--text2);transition:all .15s;position:relative}
+.loc-tab-icon{font-size:18px;display:block;margin-bottom:2px}
+.loc-tab.active.h{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
+.loc-tab.active.f{background:#EEF0FE;border-color:#5B63D3;color:#2D3490;font-weight:600}
+.loc-tab.active.d{background:#faeeda;border-color:#BA7517;color:#633806;font-weight:600}
+.loc-tab.active.cat{background:#EAF3DE;border-color:#3A7A1E;color:#27500A;font-weight:600}
+.loc-tab.active.comp{background:#F5EAF3;border-color:#8A3A8A;color:#5A1A5A;font-weight:600}
+.loc-tab.active.chat{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
+.loc-tab.active.hist{background:#F0F0FE;border-color:#6060C0;color:#303080;font-weight:600}
+.loc-tab.active.rec2{background:#FEF3E2;border-color:#E8A020;color:#8A5000;font-weight:600}
+.loc-tab.active.gstats{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20;font-weight:600}
+.tab-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{flex:1;padding:9px 4px;font-size:11px;text-align:center;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;min-width:50px}
+.nav-tab.active.h{color:#185FA5;border-bottom-color:#378ADD;font-weight:600}
+.nav-tab.active.f{color:#2D3490;border-bottom-color:#5B63D3;font-weight:600}
+.nav-tab.active.d{color:#633806;border-bottom-color:#BA7517;font-weight:600}
+.screen{display:none}.screen.active{display:block;padding-bottom:90px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px}
+.search-bar{display:flex;gap:8px;margin-bottom:10px}
+.search-bar input{flex:1;font-size:14px;padding:8px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none}
+.sort-btn{padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;font-size:11px;white-space:nowrap}
+.cat-filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}
+.cat-filter::-webkit-scrollbar{display:none}
+.cat-pill{padding:5px 12px;border:1px solid var(--border2);border-radius:100px;font-size:12px;cursor:pointer;white-space:nowrap;background:transparent;color:var(--text2)}
+.cat-pill.active.h{background:#378ADD;color:#fff;border-color:#378ADD}
+.cat-pill.active.f{background:#5B63D3;color:#fff;border-color:#5B63D3}
+.cat-pill.active.d{background:#BA7517;color:#fff;border-color:#BA7517}
+.cat-pill.active.cat{background:#3A7A1E;color:#fff;border-color:#3A7A1E}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.stat{border-radius:10px;padding:12px}
+.stat.h{background:#deeefb}.stat.f{background:#EEF0FE}.stat.d{background:#faeeda}.stat.cat{background:#EAF3DE}
+.stat-val{font-size:20px;font-weight:700}
+.stat-val.h{color:#185FA5}.stat-val.f{color:#2D3490}.stat-val.d{color:#633806}.stat-val.cat{color:#27500A}
+.stat-lbl{font-size:12px;color:var(--text2);margin-top:2px}
+.swipe-outer{position:relative;overflow:hidden;border-radius:12px;margin-bottom:8px}
+.swipe-reveal{position:absolute;right:0;top:0;bottom:0;width:80px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;background:#E24B4A}
+.swipe-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 1rem;transition:transform .15s;will-change:transform;touch-action:pan-y}
+.item-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.item-row:last-child{border-bottom:none}
+.item-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden}
+.item-icon img{width:100%;height:100%;object-fit:cover}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:11px;color:var(--text2);margin-top:2px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.item-by{font-size:10px;color:var(--text3);margin-top:1px}
+.item-actions{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.qty-ctrl{display:flex;align-items:center;gap:4px}
+.qty-btn{width:28px;height:28px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;line-height:1}
+.qty-num{font-size:14px;font-weight:700;min-width:22px;text-align:center}
+.icon-btn{width:30px;height:30px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.icon-btn:hover,.icon-btn:active{background:var(--bg4)}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:100px;font-weight:500}
+.badge-ok{background:#EAF3DE;color:#27500A}
+.badge-warn{background:#FAEEDA;color:#633806}
+.badge-danger{background:#FCEBEB;color:#791F1F}
+.badge-expired{background:#2a2a28;color:#d0d0c8}
+.badge-low{background:#FBEAF0;color:#72243E}
+.badge-lugar{font-size:10px;padding:1px 6px;border-radius:100px;font-weight:500}
+.badge-lugar.h{background:#deeefb;color:#185FA5}
+.badge-lugar.f{background:#EEF0FE;color:#2D3490}
+.badge-lugar.d{background:#faeeda;color:#633806}
+.section-lbl{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+.section-lbl:first-child{margin-top:0}
+/* Compras */
+.compra-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.compra-item:last-child{border-bottom:none}
+.check-circle{width:24px;height:24px;border:2px solid var(--border2);border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.check-circle.done{background:#1D9E75;border-color:#1D9E75;color:#fff}
+.compra-txt{font-size:14px;color:var(--text);flex:1}
+.compra-txt.done{text-decoration:line-through;color:var(--text3)}
+/* Modo compra */
+.shop-item{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.shop-item.bought{background:var(--bg4);opacity:0.6}
+.shop-item-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
+.shop-item-name{font-size:15px;font-weight:500;color:var(--text);flex:1}
+.shop-check{width:28px;height:28px;border:2px solid var(--border2);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.shop-check.done{background:#1D9E75;border-color:#1D9E75;color:#fff}
+/* Chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:300px}
+.chat-msgs{flex:1;overflow-y:auto;padding:0 0 10px;display:flex;flex-direction:column;gap:8px}
+.chat-msg{max-width:80%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+.chat-msg.mine{background:#378ADD;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.other{background:var(--card);border:1px solid var(--border);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg-name{font-size:11px;font-weight:600;margin-bottom:4px;opacity:0.8}
+.chat-msg-time{font-size:10px;opacity:0.7;margin-top:4px;text-align:right}
+.chat-msg img{max-width:200px;border-radius:8px;margin-top:6px;display:block}
+.chat-input-row{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);align-items:flex-end}
+.chat-input{flex:1;font-size:14px;padding:10px 14px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none;resize:none;max-height:100px;font-family:inherit}
+.chat-send{width:40px;height:40px;border:none;border-radius:50%;background:#378ADD;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-photo-btn{width:36px;height:36px;border:1px solid var(--border2);border-radius:50%;background:var(--bg3);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.chat-photo-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+/* Historial */
+.hist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.hist-item:last-child{border-bottom:none}
+.hist-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.hist-action{font-size:11px;padding:2px 8px;border-radius:100px;font-weight:600;white-space:nowrap}
+.hist-action.agregado{background:#deeefb;color:#185FA5}
+.hist-action.consumido{background:#EAF3DE;color:#27500A}
+.hist-action.eliminado{background:var(--bg4);color:var(--text2)}
+.hist-action.comprado{background:#F5EAF3;color:#5A1A5A}
+/* Recordatorios */
+.reminder-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.reminder-item:last-child{border-bottom:none}
+/* Catálogo */
+.cat-product-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.cat-product-info{flex:1;min-width:0}
+.cat-product-name{font-size:14px;font-weight:500;color:var(--text)}
+.cat-product-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.cat-product-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+/* Vencimientos */
+.venc-toggle{display:flex;gap:6px;margin-bottom:10px}
+.venc-toggle-btn{padding:5px 14px;border:1px solid var(--border2);border-radius:100px;font-size:12px;cursor:pointer;background:transparent;color:var(--text2)}
+.venc-toggle-btn.active{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
+/* FAB */
+.fab{position:fixed;bottom:24px;right:20px;width:54px;height:54px;border-radius:50%;color:#fff;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:background .2s}
+.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}.fab.gstats{background:#2E7D32}
+/* Modals */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--modal);border-radius:20px 20px 0 0;padding:1.25rem;width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
+.modal-drag{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1rem}
+.modal-header{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+.modal-title{font-size:16px;font-weight:600;flex:1;color:var(--text)}
+.method-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.method-btn{padding:10px 6px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.method-btn.active{border-color:#3A7A1E;color:#27500A;background:#EAF3DE}
+.method-icon{font-size:20px}
+.input-section{display:none}.input-section.active{display:block}
+.upload-area{border:2px dashed var(--border2);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;margin-bottom:12px;color:var(--text2);font-size:13px;position:relative}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-preview{width:100%;max-height:130px;object-fit:cover;border-radius:10px;margin-bottom:10px;display:none}
+.ai-status{display:none;text-align:center;padding:10px;font-size:13px;color:var(--text2);border-radius:10px;background:var(--bg3);margin-bottom:10px}
+.ai-status.visible{display:block}
+.barcode-result{border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px;display:none;background:#EAF3DE;color:#27500A;font-weight:500}
+.product-found{display:flex;gap:10px;align-items:center;background:var(--bg3);border-radius:10px;padding:10px;margin-bottom:12px}
+.product-found img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.product-found-name{font-size:13px;font-weight:500;color:var(--text)}
+.product-found-sub{font-size:11px;color:var(--text2)}
+.field{margin-bottom:12px}
+.field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none;font-family:inherit}
+.field textarea{resize:none;height:58px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-primary{width:100%;padding:12px;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;background:#3A7A1E}
+.btn-secondary{width:100%;padding:11px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px}
+.btn-danger{width:100%;padding:11px;background:transparent;color:#A32D2D;border:1px solid #f09595;border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px}
+.ai-date-suggest{background:#EEF0FE;border:1px solid #B0B5F0;border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;color:#2D3490;display:none}
+.ai-date-suggest button{margin-top:6px;padding:5px 12px;border:1px solid #5B63D3;border-radius:8px;background:transparent;color:#2D3490;font-size:12px;cursor:pointer;font-weight:500}
+.loc-assign-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.loc-assign-row:last-child{border-bottom:none}
+.loc-assign-icon{font-size:20px;width:32px;text-align:center}
+.loc-assign-name{font-size:14px;color:var(--text);flex:1}
+.loc-assign-qty{display:flex;align-items:center;gap:6px}
+.receta-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.receta-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.receta-body{font-size:13px;color:var(--text);line-height:1.65;white-space:pre-wrap}
+.receta-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.receta-tag{font-size:11px;padding:2px 8px;border-radius:100px;background:var(--bg4);color:var(--text2)}
+.receta-loading{text-align:center;padding:2rem;color:var(--text2);font-size:14px}
+.falta-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg4)}
+.falta-row:last-child{border-bottom:none}
+.falta-nombre{font-size:14px;color:var(--text);flex:1}
+.falta-estado{font-size:12px;padding:2px 8px;border-radius:100px;font-weight:500}
+.falta-estado.tengo{background:#EAF3DE;color:#27500A}
+.falta-estado.falta{background:#FCEBEB;color:#791F1F}
+/* Profile modal */
+.profile-colors{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.profile-color{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent}
+.profile-color.selected{border-color:var(--text)}
+/* Toast */
+.toast-wrap{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px}
+.toast{background:#1a1a18;color:#f5f5f0;padding:9px 18px;border-radius:100px;font-size:13px;opacity:0;transition:opacity .2s;white-space:nowrap;font-weight:500;pointer-events:auto}
+[data-theme=dark] .toast{background:#f0f0e8;color:#18181a}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:14px}
+.notif-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-size:13px;color:var(--text2)}
+.notif-banner button{margin-left:auto;padding:6px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--card);font-size:12px;cursor:pointer;font-weight:500;color:var(--text)}
+/* Smart list alert */
+.smart-alert{background:#FAEEDA;border:1px solid #FAC775;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#633806;display:flex;align-items:center;gap:8px}
+.smart-alert button{margin-left:auto;padding:5px 12px;border:1px solid #BA7517;border-radius:8px;background:transparent;color:#633806;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- PROFILE MODAL (first use) -->
+<div class="modal-bg" id="profileModalBg">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">👋 Bienvenido a Mi Alacena</div></div>
+  <p style="font-size:14px;color:var(--text2);margin-bottom:16px">¿Cómo te llamás? Esto ayuda a saber quién agrega o modifica cada producto.</p>
+  <div class="field"><label>Tu nombre</label><input id="profileName" placeholder="Ej: Alejo" maxlength="20"/></div>
+  <div class="field">
+    <label>Color</label>
+    <div class="profile-colors" id="profileColors"></div>
+  </div>
+  <button class="btn-primary" onclick="saveProfile()">Empezar</button>
+</div>
+</div>
+
+<div class="app">
+<div class="app-header">
+  <div class="app-title">🏠 Mi Alacena</div>
+  <div class="ver">v8.3.3</div>
+  <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
+  <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
+  <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
+  <button class="icon-btn-sm" onclick="toggleDark()" id="darkBtn">🌙</button>
+</div>
+
+<div class="loc-tabs">
+  <button class="loc-tab active h" id="lt-h" onclick="setLoc('h')"><span class="loc-tab-icon">🧊</span>Heladera</button>
+  <button class="loc-tab f" id="lt-f" onclick="setLoc('f')"><span class="loc-tab-icon">❄️</span>Freezer</button>
+  <button class="loc-tab d" id="lt-d" onclick="setLoc('d')"><span class="loc-tab-icon">🫙</span>Despensa</button>
+  <button class="loc-tab cat" id="lt-cat" onclick="setLoc('cat')"><span class="loc-tab-icon">📋</span>Catálogo</button>
+  <button class="loc-tab comp" id="lt-comp" onclick="setLoc('comp')"><span class="loc-tab-icon">🛒</span>Compras</button>
+  <button class="loc-tab chat" id="lt-chat" onclick="setLoc('chat')"><span class="loc-tab-icon">💬</span>Chat<span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
+  <button class="loc-tab hist" id="lt-hist" onclick="setLoc('hist')"><span class="loc-tab-icon">📊</span>Historial</button>
+  <button class="loc-tab" id="lt-rec2" onclick="setLoc('rec2')" style="--tab-bg:#FEF3E2;--tab-border:#E8A020;--tab-color:#8A5000"><span class="loc-tab-icon">🍳</span>Recetas</button>
+  <button class="loc-tab" id="lt-gstats" onclick="setLoc('gstats')"><span class="loc-tab-icon">📈</span>Stats</button>
+</div>
+
+<div class="nav-tabs" id="navTabs">
+  <button class="nav-tab active h" id="nt-inv" onclick="setNav('inv')">Inventario</button>
+  <button class="nav-tab h" id="nt-venc" onclick="setNav('venc')">Vencim.</button>
+  <button class="nav-tab h" id="nt-rec" onclick="setNav('rec')">Recetas</button>
+  <button class="nav-tab h" id="nt-stats" onclick="setNav('stats')">Stats</button>
+</div>
+
+<!-- INVENTARIO -->
+<div id="sc-inv" class="screen active">
+  <div class="stat-row" id="statsRow"></div>
+  <div id="smartAlerts"></div>
+  <div id="notifBanner"></div>
+  <div class="search-bar">
+    <input id="searchInput" placeholder="Buscar en todo..." oninput="renderInventory()">
+    <button class="sort-btn h" id="sortBtn" onclick="toggleSort()">📅 Venc.</button>
+  </div>
+  <div class="cat-filter" id="catFilter"></div>
+  <div id="itemList"></div>
+</div>
+
+<!-- VENCIMIENTOS -->
+<div id="sc-venc" class="screen">
+  <div class="venc-toggle">
+    <button class="venc-toggle-btn active" id="vt-cur" onclick="setVencView('cur')">Esta sección</button>
+    <button class="venc-toggle-btn" id="vt-all" onclick="setVencView('all')">Todo</button>
+  </div>
+  <div class="card" id="vencContent"></div>
+</div>
+
+<!-- RECETAS -->
+<div id="sc-rec" class="screen">
+  <div class="card">
+    <div class="section-lbl" style="margin-bottom:10px">¿Qué puedo cocinar?</div>
+    <button class="btn-primary" style="background:#378ADD" onclick="sugerirRecetas()" id="btnSugerir">✨ Sugerir con lo que tengo</button>
+  </div>
+  <div class="card">
+    <div class="section-lbl" style="margin-bottom:10px">¿Qué me falta?</div>
+    <div style="display:flex;gap:8px">
+      <input id="recetaQuery" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" placeholder="Ej: milanesas..." onkeydown="if(event.key==='Enter')checkReceta()">
+      <button onclick="checkReceta()" style="padding:9px 14px;border:none;border-radius:10px;background:#378ADD;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Ver</button>
+    </div>
+  </div>
+  <div id="recetaResults"></div>
+</div>
+
+<!-- STATS -->
+<div id="sc-stats" class="screen"><div id="statsContent"></div></div>
+
+<!-- CATALOGO -->
+<div id="sc-cat" class="screen" style="display:none">
+  <div class="search-bar"><input id="catSearch" placeholder="Buscar en catálogo..." oninput="renderCatalog()"></div>
+  <div class="cat-filter" id="catCatFilter"></div>
+  <div id="catalogList"></div>
+</div>
+
+<!-- COMPRAS -->
+<div id="sc-comp" class="screen" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn-primary" style="flex:1;margin-top:0;background:#8A3A8A;padding:10px" onclick="setCompView('list')">📋 Lista</button>
+    <button class="btn-primary" style="flex:1;margin-top:0;background:#5B63D3;padding:10px" onclick="setCompView('shop')">🛒 Modo compra</button>
+  </div>
+  <div id="compListView">
+    <div id="smartCompras"></div>
+    <div class="card">
+      <div class="section-lbl">Lista de compras</div>
+      <div id="compraList"></div>
+    </div>
+    <button class="btn-secondary" style="margin-top:0" onclick="addCompra()">+ Agregar ítem</button>
+    <button class="btn-secondary" style="margin-top:6px" onclick="shareCompras()">📤 Compartir por WhatsApp</button>
+    <button class="btn-secondary" style="margin-top:6px" onclick="clearDoneCompras()">🗑 Limpiar tachados</button>
+  </div>
+  <div id="compShopView" style="display:none">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Tocá para tachar mientras comprás:</div>
+    <div id="shopList"></div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="sc-chat" class="screen" style="display:none">
+  <div class="chat-wrap">
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input-row">
+      <div class="chat-photo-btn" title="Foto">
+        📷<input type="file" accept="image/*" capture="environment" onchange="sendChatPhoto(this)">
+      </div>
+      <textarea class="chat-input" id="chatInput" placeholder="Escribí un mensaje..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}"></textarea>
+      <button class="chat-send" onclick="sendChatMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECETAS TAB -->
+<div id="sc-rec2" class="screen" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="rec2-tab-all" class="btn-primary" style="flex:1;margin-top:0;background:#E8A020;padding:10px;font-size:13px" onclick="setRec2View('all')">🍳 Con todo el stock</button>
+    <button id="rec2-tab-venc" class="btn-secondary" style="flex:1;margin-top:0;padding:10px;font-size:13px" onclick="setRec2View('venc')">⏰ Por vencer</button>
+  </div>
+  <div id="rec2AllView">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-lbl" style="margin-top:0">Seleccioná los ingredientes</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="selectAllIngredients(true)" style="font-size:11px;padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:transparent;cursor:pointer;color:var(--text2)">Todo</button>
+          <button onclick="selectAllIngredients(false)" style="font-size:11px;padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:transparent;cursor:pointer;color:var(--text2)">Ninguno</button>
+        </div>
+      </div>
+      <div id="rec2IngList" style="max-height:280px;overflow-y:auto"></div>
+      <button class="btn-primary" style="background:#E8A020;margin-top:12px" onclick="sugerirRecetasAll()" id="btnSugerirAll">✨ Sugerir recetas con seleccionados</button>
+    </div>
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">¿Qué me falta para una receta?</div>
+      <div style="display:flex;gap:8px">
+        <input id="recetaQuery2" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" placeholder="Ej: milanesas, risotto..." onkeydown="if(event.key==='Enter')checkReceta2()">
+        <button onclick="checkReceta2()" style="padding:9px 14px;border:none;border-radius:10px;background:#E8A020;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Ver</button>
+      </div>
+    </div>
+    <div id="rec2AllResults"></div>
+  </div>
+  <div id="rec2VencView" style="display:none">
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:6px">Productos próximos a vencer</div>
+      <div id="rec2VencList" style="font-size:13px;color:var(--text2)"></div>
+    </div>
+    <button class="btn-primary" style="background:#E24B4A;margin-top:0" onclick="sugerirRecetasVenc()" id="btnSugerirVenc">🔥 Sugerir con los que vencen</button>
+    <div id="rec2VencResults" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- STATS GENERALES -->
+<div id="sc-gstats" class="screen" style="display:none">
+  <div id="gstatsContent"></div>
+</div>
+
+<!-- HISTORIAL -->
+<div id="sc-hist" class="screen" style="display:none">
+  <div class="cat-filter" id="histFilter"></div>
+  <div class="card" id="histList"></div>
+</div>
+</div><!-- end .app -->
+
+<button class="fab h" id="fab" onclick="onFabClick()">+</button>
+
+<!-- ADD CATALOG MODAL -->
+<div class="modal-bg" id="addModalBg" onclick="closeAddModalBg(event)">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">Agregar al catálogo</div></div>
+  <div class="method-row">
+    <button class="method-btn active" id="mb-barcode" onclick="setAddMethod('barcode')"><span class="method-icon">▦</span><span>Código</span></button>
+    <button class="method-btn" id="mb-photo" onclick="setAddMethod('photo')"><span class="method-icon">📷</span><span>Foto</span></button>
+    <button class="method-btn" id="mb-manual" onclick="setAddMethod('manual')"><span class="method-icon">✏️</span><span>Manual</span></button>
+  </div>
+  <div class="input-section active" id="add-sec-barcode">
+    <div id="scannerWrap" style="margin-bottom:12px">
+      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:120px;border:2px dashed var(--border2);border-radius:12px;cursor:pointer;color:var(--text2);font-size:13px;gap:8px;position:relative;background:var(--bg3)">
+        <input type="file" accept="image/*" capture="environment" id="barcodeInput" onchange="scanBarcodeFromPhoto(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+        <span style="font-size:32px">▦</span><span>Apuntá la cámara al código</span>
+      </label>
+      <img id="barcodePreview" style="display:none;width:100%;max-height:100px;object-fit:cover;border-radius:10px;margin-top:8px" alt="">
+    </div>
+    <div id="manualBarcodeWrap" style="display:none;margin-bottom:12px">
+      <div style="display:flex;gap:8px">
+        <input id="manualBarcode" type="number" placeholder="Código de barras" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+        <button onclick="lookupManualBarcode()" style="padding:9px 14px;border:none;border-radius:10px;background:#3A7A1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Buscar</button>
+      </div>
+    </div>
+    <div class="barcode-result" id="barcodeResult"></div>
+    <div id="productFound" class="product-found" style="display:none">
+      <img id="pfImg" src="" alt=""><div><div class="product-found-name" id="pfName"></div><div class="product-found-sub" id="pfSub"></div></div>
+    </div>
+    <div class="ai-status" id="barcodeStatus"></div>
+  </div>
+  <div class="input-section" id="add-sec-photo">
+    <div class="upload-area">
+      <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="handlePhoto(this)">
+      <div id="uploadLabel">📷 Sacar foto del producto</div>
+      <img id="uploadPreview" class="upload-preview">
+    </div>
+    <div class="ai-status" id="aiStatus"></div>
+  </div>
+  <div class="input-section" id="add-sec-manual"></div>
+  <div class="field"><label>Nombre</label><input id="fNombre" placeholder="Ej: Leche entera"/></div>
+  <div class="row2">
+    <div class="field"><label>Categoría</label><select id="fCat">
+      <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
+      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
+      <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
+      <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
+      <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
+    </select></div>
+    <div class="field"><label>Unidad</label>
+      <select id="fUnidad"><option>unid</option><option>kg</option><option>g</option><option>L</option><option>ml</option></select>
+    </div>
+  </div>
+  <div class="field"><label>Nota (opcional)</label><textarea id="fNota" placeholder="Sin TACC, marca preferida..."></textarea></div>
+  <div class="field">
+    <label>Foto del producto (opcional)</label>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+      <div id="addImgPreview" style="width:60px;height:60px;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0">📦</div>
+      <label style="display:inline-block;padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        📷 Sacar o elegir foto
+        <input type="file" accept="image/*" capture="environment" onchange="handleAddModalPhoto(this)" style="display:none">
+      </label>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="saveCatalogItem()">Agregar al catálogo</button>
+  <button class="btn-secondary" onclick="closeAddModal()">Cancelar</button>
+</div>
+</div>
+
+<!-- EDIT CATALOG MODAL -->
+<div class="modal-bg" id="editCatModalBg" onclick="if(event.target===this)closeEditCatModal()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">Editar producto</div></div>
+  <div class="field"><label>Nombre</label><input id="ecNombre"/></div>
+  <div class="row2">
+    <div class="field"><label>Categoría</label><select id="ecCat">
+      <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
+      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
+      <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
+      <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
+      <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
+    </select></div>
+    <div class="field"><label>Unidad</label>
+      <select id="ecUnidad"><option>unid</option><option>kg</option><option>g</option><option>L</option><option>ml</option></select>
+    </div>
+  </div>
+  <div class="field"><label>Nota</label><textarea id="ecNota"></textarea></div>
+  <div class="field">
+    <label>Foto del producto</label>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+      <div id="ecImgPreview" style="width:60px;height:60px;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0">📦</div>
+      <div style="flex:1">
+        <label style="display:inline-block;padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+          📷 Sacar o elegir foto
+          <input type="file" accept="image/*" capture="environment" id="ecPhotoInput" onchange="handleEditCatPhoto(this)" style="display:none">
+        </label>
+        <button onclick="clearEditCatPhoto()" style="margin-left:8px;padding:8px 12px;background:transparent;border:1px solid var(--border2);border-radius:10px;font-size:13px;cursor:pointer;color:var(--text2)">✕ Quitar</button>
+      </div>
+    </div>
+  </div>
+  <div class="field"><label>Recordatorio (días antes del vencimiento)</label>
+    <select id="ecReminder"><option value="0">Sin recordatorio</option><option value="1">1 día antes</option><option value="2">2 días antes</option><option value="3">3 días antes</option><option value="5">5 días antes</option><option value="7">1 semana antes</option></select>
+  </div>
+  <button class="btn-primary" onclick="saveEditCatalog()">Guardar</button>
+  <button class="btn-danger" onclick="deleteCatalogItem()">Eliminar del catálogo</button>
+  <button class="btn-secondary" onclick="closeEditCatModal()">Cancelar</button>
+</div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-bg" id="assignModalBg" onclick="if(event.target===this)closeAssignModal()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title" id="assignTitle">Asignar producto</div></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px;background:var(--bg3);border-radius:10px">
+    <div style="position:relative">
+      <div id="assignIcon" style="width:52px;height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden"></div>
+      <label style="position:absolute;bottom:-4px;right:-4px;width:20px;height:20px;background:#378ADD;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px">
+        📷<input type="file" accept="image/*" capture="environment" onchange="handleAssignPhoto(this)" style="display:none">
+      </label>
+    </div>
+    <div><div id="assignName" style="font-size:14px;font-weight:600;color:var(--text)"></div><div id="assignSub" style="font-size:12px;color:var(--text2)"></div></div>
+  </div>
+  <div class="ai-date-suggest" id="aiDateSuggest">
+    <strong>💡 Fecha estimada:</strong> <span id="aiDateText"></span>
+    <br><button onclick="applyAiDate()">Usar esta fecha</button>
+  </div>
+  <div id="assignLocRows">
+    <div class="loc-assign-row"><div class="loc-assign-icon">🧊</div><div class="loc-assign-name">Heladera</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('h',-1)">−</button><span class="qty-num" id="aqh">0</span><button class="qty-btn" onclick="changeAssignQty('h',1)">+</button></div></div>
+    <div class="loc-assign-row"><div class="loc-assign-icon">❄️</div><div class="loc-assign-name">Freezer</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('f',-1)">−</button><span class="qty-num" id="aqf">0</span><button class="qty-btn" onclick="changeAssignQty('f',1)">+</button></div></div>
+    <div class="loc-assign-row"><div class="loc-assign-icon">🫙</div><div class="loc-assign-name">Despensa</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('d',-1)">−</button><span class="qty-num" id="aqd">0</span><button class="qty-btn" onclick="changeAssignQty('d',1)">+</button></div></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
+  <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
+  <div class="field" style="margin-top:4px">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer" onclick="toggleAbierto()">
+      <div id="abiertoCheck" style="width:24px;height:24px;border:2px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"></div>
+      <div><div style="font-size:14px;font-weight:500;color:var(--text)">📦 Paquete abierto</div><div style="font-size:12px;color:var(--text2)">La IA sugiere nueva fecha de vencimiento</div></div>
+    </div>
+    <div id="abiertoDateSuggest" style="display:none;margin-top:8px;background:#FEF3E2;border:1px solid #E8A020;border-radius:10px;padding:10px;font-size:13px;color:#8A5000">
+      <strong>⏰ Vence abierto:</strong> <span id="abiertoDateText">calculando...</span>
+      <br><button onclick="applyAbiertoDate()" style="margin-top:6px;padding:5px 12px;border:1px solid #E8A020;border-radius:8px;background:transparent;color:#8A5000;font-size:12px;cursor:pointer;font-weight:500">Usar esta fecha</button>
+    </div>
+  </div>
+  <button class="btn-primary" style="background:#378ADD" onclick="saveAssignment()">Guardar</button>
+  <button class="btn-secondary" onclick="closeAssignModal()">Cancelar</button>
+</div>
+</div>
+
+<!-- PROFILE EDIT MODAL -->
+<div class="modal-bg" id="profileEditBg" onclick="if(event.target===this)closeProfileEdit()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">Mi perfil</div></div>
+  <div class="field"><label>Nombre</label><input id="editProfileName" maxlength="20"/></div>
+  <div class="field"><label>Color</label><div class="profile-colors" id="editProfileColors"></div></div>
+  <button class="btn-primary" onclick="saveProfileEdit()">Guardar</button>
+  <button class="btn-secondary" onclick="closeProfileEdit()">Cancelar</button>
+</div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModalBg" onclick="if(event.target===this)closeSettings()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">⚙️ Configuración</div></div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Las keys se guardan solo en tu dispositivo, nunca en el servidor.</p>
+  <div class="field">
+    <label>Gemini API Key <span style="font-size:11px;color:var(--text3)">(aistudio.google.com)</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="cfgGemini" type="password" placeholder="AIza..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <button onclick="toggleShowKey('cfgGemini')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>JSONBin Master Key <span style="font-size:11px;color:var(--text3)">(jsonbin.io)</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="cfgJsonbinKey" type="password" placeholder="$2a$10$..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <button onclick="toggleShowKey('cfgJsonbinKey')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>JSONBin Bin ID <span style="font-size:11px;color:var(--text3)">(el ID de tu bin)</span></label>
+    <input id="cfgJsonbinBin" placeholder="69f2b93736566621..." style="font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none;width:100%">
+  </div>
+  <div id="cfgStatus" style="display:none;padding:10px;border-radius:10px;font-size:13px;margin-bottom:8px"></div>
+  <button class="btn-primary" style="background:#378ADD" onclick="saveSettings()">💾 Guardar configuración</button>
+  <button class="btn-secondary" onclick="testConnection()" id="btnTestConn">🔌 Probar conexión</button>
+  <button class="btn-secondary" onclick="closeSettings()">Cerrar</button>
+</div>
+</div>
+
+<!-- IMAGE VIEWER -->
+<div id="imgViewerBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;align-items:center;justify-content:center" onclick="closeImgViewer()">
+  <img id="imgViewerImg" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain">
+  <button onclick="event.stopPropagation();closeImgViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer">✕</button>
+</div>
+<script>
+// Keys stored in localStorage — never hardcoded
+function getKey(k){return localStorage.getItem('cfg_'+k)||'';}
+const GEMINI_KEY=getKey('gemini_key');
+const JSONBIN_KEY=getKey('jsonbin_key');
+const JSONBIN_BIN=getKey('jsonbin_bin');
+
+const PROFILE_COLORS=['#378ADD','#E24B4A','#3A7A1E','#BA7517','#5B63D3','#C87820','#8A3A8A','#1D9E75','#666','#1a1a18'];
+const CATS_H={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Fiambres al vacío':'🧀','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Otros':'📦'};
+const CATS_F={'Carnes y aves':'🥩','Pescados':'🐟','Congelados':'🧊','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Lácteos':'🥛','Fiambres al vacío':'🧀','Otros':'📦'};
+const CATS_D={'Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Bebidas':'🥤','Limpieza':'🧹','Otros':'📦'};
+const ALL_CATS={'Lácteos':'🥛','Carnes y aves':'🥩','Pescados':'🐟','Fiambres':'🍖','Fiambres al vacío':'🧀','Pastas caseras':'🍝','Salsas':'🫕','Verduras':'🥦','Frutas':'🍎','Bebidas':'🥤','Harinas y cereales':'🌾','Arroz y pastas':'🍝','Aceites':'🫙','Conservas':'🥫','Snacks':'🍪','Especias':'🌶️','Congelados':'🧊','Limpieza':'🧹','Otros':'📦'};
+const COLORS={'Lácteos':'#E6F1FB','Carnes y aves':'#FCEBEB','Pescados':'#E1F5EE','Fiambres':'#FAECE7','Fiambres al vacío':'#FBEAF0','Pastas caseras':'#FEF3E2','Salsas':'#FEF0E0','Verduras':'#EAF3DE','Frutas':'#FAEEDA','Bebidas':'#E1F5EE','Harinas y cereales':'#FAEEDA','Arroz y pastas':'#FAECE7','Aceites':'#EAF3DE','Conservas':'#E6F1FB','Snacks':'#FBEAF0','Especias':'#FCEBEB','Congelados':'#EEEDFE','Limpieza':'#EEEDFE','Otros':'#F1EFE8'};
+const FRESH_CATS=['Carnes y aves','Pescados','Fiambres','Lácteos','Verduras','Frutas','Arroz y pastas','Conservas','Pastas caseras','Salsas','Fiambres al vacío'];
+const DURACION={
+  'Carnes y aves':{h:3,f:90},
+  'Pescados':{h:2,f:60},
+  'Fiambres':{h:7,f:30},
+  'Fiambres al vacío':{h:21,f:60},
+  'Lácteos':{h:7,f:30},
+  'Verduras':{h:5,f:30},
+  'Frutas':{h:7,f:60},
+  'Arroz y pastas':{h:null,f:null,d:730},
+  'Pastas caseras':{h:3,f:90},
+  'Salsas':{h:5,f:180,d:null},
+  'Conservas':{h:null,f:null,d:1095}
+};
+
+let loc='h',nav='inv',sortByVenc=false,vencView='cur';
+let currentCat='Todos',catCatFilter='Todos',histFilter='todos',compView='list';
+let editingCatId=null,assigningCatId=null,assignQtys={h:0,f:0,d:0};
+let addMethod='barcode',currentProductImg='';
+let darkMode=localStorage.getItem('dark')==='1';
+let aiSuggestedDate=null;
+let selectedProfileColor=PROFILE_COLORS[0];
+let lastSeenChat=parseInt(localStorage.getItem('lastSeenChat')||'0');
+
+// Storage
+function loadCatalog(){return JSON.parse(localStorage.getItem('catalog')||'[]')}
+function saveCatalog(a){localStorage.setItem('catalog',JSON.stringify(a));scheduleSync();}
+function loadStock(){return JSON.parse(localStorage.getItem('stock2')||'{}')}
+function saveStock(s){localStorage.setItem('stock2',JSON.stringify(s));scheduleSync();}
+function loadCompras(){return JSON.parse(localStorage.getItem('compras')||'[]')}
+function saveCompras(a){localStorage.setItem('compras',JSON.stringify(a));scheduleSync();}
+function loadHist(){return JSON.parse(localStorage.getItem('hist2')||'[]')}
+function saveHist(a){localStorage.setItem('hist2',JSON.stringify(a.slice(-300)));scheduleSync();}
+function loadChat(){return JSON.parse(localStorage.getItem('chat')||'[]')}
+function saveChat(a){localStorage.setItem('chat',JSON.stringify(a.slice(-200)));scheduleSync();}
+function getProfile(){return JSON.parse(localStorage.getItem('userProfile')||'null')}
+function saveProfileData(p){localStorage.setItem('userProfile',JSON.stringify(p));}
+
+// JSONBin Sync
+let syncTimeout=null,isSyncing=false;
+let binId=localStorage.getItem('jsonbin_bin_id')||getKey('jsonbin_bin');
+function scheduleSync(){if(syncTimeout)clearTimeout(syncTimeout);syncTimeout=setTimeout(pushToCloud,1500);}
+async function pushToCloud(){
+  if(isSyncing)return;isSyncing=true;showSyncStatus('⏫ Guardando...');
+  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),ts:Date.now()};
+  try{
+    if(!binId){
+      const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':getKey('jsonbin_key'),'X-Bin-Name':'mi-alacena'},body:JSON.stringify(data)});
+      const d=await r.json();binId=d.metadata?.id;
+      if(binId){localStorage.setItem('jsonbin_bin_id',binId);}
+    } else {
+      await fetch('https://api.jsonbin.io/v3/b/'+binId,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':getKey('jsonbin_key')},body:JSON.stringify(data)});
+    }
+    localStorage.setItem('data_ts',String(data.ts));showSyncStatus('✅ Sincronizado');
+  }catch(e){showSyncStatus('❌ Sin conexión');}
+  isSyncing=false;
+}
+async function pullFromCloud(){
+  if(!binId){showSyncStatus('⚠️ Configurá las keys');return;}
+  showSyncStatus('⏬ Sincronizando...');
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest',{headers:{'X-Master-Key':getKey('jsonbin_key')}});
+    const d=await r.json();const data=d.record;
+    if(!data?.catalog){showSyncStatus('❌ Sin datos');return;}
+    const localTs=parseInt(localStorage.getItem('data_ts')||'0');
+    const cloudTs=data.ts||0;
+    if(cloudTs>localTs||loadCatalog().length===0){
+      localStorage.setItem('catalog',JSON.stringify(data.catalog));
+      localStorage.setItem('stock2',JSON.stringify(data.stock||{}));
+      localStorage.setItem('compras',JSON.stringify(data.compras||[]));
+      if(data.hist)localStorage.setItem('hist2',JSON.stringify(data.hist));
+      if(data.chat){localStorage.setItem('chat',JSON.stringify(data.chat));updateChatBadge();}
+      localStorage.setItem('data_ts',String(cloudTs));
+      showSyncStatus('✅ Datos actualizados');
+      renderAll();renderCatalog();renderCompras();renderHist();renderChat();
+    } else {showSyncStatus('✅ Ya estás al día');}
+  }catch(e){showSyncStatus('❌ Error al sincronizar');}
+}
+function showSyncStatus(msg){
+  let el=document.getElementById('syncStatus');
+  if(!el){el=document.createElement('div');el.id='syncStatus';el.style.cssText='position:fixed;top:12px;right:12px;font-size:11px;padding:4px 10px;border-radius:100px;background:var(--card);border:1px solid var(--border);color:var(--text2);z-index:50;transition:opacity .3s';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';
+  if(msg.startsWith('✅'))setTimeout(()=>el.style.opacity='0',2500);
+}
+
+// Profile
+function initProfileColors(containerId,selectedColor){
+  const el=document.getElementById(containerId);
+  el.innerHTML=PROFILE_COLORS.map(c=>'<div class="profile-color'+(c===selectedColor?' selected':'')+'" style="background:'+c+'" onclick="selectColor(\''+c+'\',\''+containerId+'\')"></div>').join('');
+}
+function selectColor(c,containerId){
+  selectedProfileColor=c;
+  document.querySelectorAll('#'+containerId+' .profile-color').forEach(el=>{el.classList.toggle('selected',el.style.background===c||el.style.backgroundColor===c);});
+}
+function saveProfile(){
+  const name=document.getElementById('profileName').value.trim();
+  if(!name){alert('Ingresá tu nombre');return;}
+  saveProfileData({name,color:selectedProfileColor});
+  document.getElementById('profileModalBg').classList.remove('open');
+  updateAvatar();
+}
+function openProfileEdit(){
+  const p=getProfile();if(!p)return;
+  document.getElementById('editProfileName').value=p.name;
+  selectedProfileColor=p.color;
+  initProfileColors('editProfileColors',p.color);
+  document.getElementById('profileEditBg').classList.add('open');
+}
+function saveProfileEdit(){
+  const name=document.getElementById('editProfileName').value.trim();
+  if(!name){alert('Ingresá tu nombre');return;}
+  saveProfileData({name,color:selectedProfileColor});
+  document.getElementById('profileEditBg').classList.remove('open');
+  updateAvatar();toast('Perfil actualizado');
+}
+function closeProfileEdit(){document.getElementById('profileEditBg').classList.remove('open');}
+function updateAvatar(){
+  const p=getProfile();if(!p)return;
+  const el=document.getElementById('userAvatar');
+  el.textContent=p.name.charAt(0).toUpperCase();
+  el.style.background=p.color;
+}
+
+// Dark mode
+function toggleDark(){darkMode=!darkMode;localStorage.setItem('dark',darkMode?'1':'0');applyDark();}
+function applyDark(){document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');document.getElementById('darkBtn').textContent=darkMode?'☀️':'🌙';}
+applyDark();
+
+function daysLeft(d){if(!d)return null;return Math.round((new Date(d+'T00:00:00')-new Date(new Date().toDateString()))/86400000)}
+function getBadge(d){if(!d)return'';const dl=daysLeft(d);if(dl<0)return'<span class="badge badge-expired">Vencido</span>';if(dl===0)return'<span class="badge badge-danger">Hoy</span>';if(dl<=3)return'<span class="badge badge-danger">'+dl+'d</span>';if(dl<=7)return'<span class="badge badge-warn">'+dl+'d</span>';return'<span class="badge badge-ok">'+dl+'d</span>';}
+function fmtDay(iso){return new Date(iso).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}
+function fmtTime(iso){return new Date(iso).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+
+function addHistEntry(catId,accion,delta){
+  const p=getProfile();const cat=loadCatalog().find(x=>x.id===catId);if(!cat)return;
+  const h=loadHist();
+  h.unshift({id:Date.now().toString(),catId,nombre:cat.nombre,cat:cat.cat,accion,delta,by:p?.name||'?',byColor:p?.color||'#666',ts:new Date().toISOString(),loc});
+  saveHist(h);
+}
+
+function cleanAutoCompras(){
+  const stock=loadStock();const catalog=loadCatalog();
+  let compras=loadCompras();
+  const before=compras.length;
+  compras=compras.filter(c=>{
+    if(!c.auto||!c.ref||!c.ref.startsWith('low_'))return true;
+    const catId=c.ref.replace('low_','');
+    const cat=catalog.find(p=>p.id===catId);if(!cat)return false;
+    // Only keep if there's a location with qty>0 AND qty<stockMin
+    let stillLow=false;
+    ['h','f','d'].forEach(l=>{
+      const s=stock[catId]?.[l];
+      if(s&&s.stockMin>0&&s.qty>0&&s.qty<s.stockMin)stillLow=true;
+    });
+    return stillLow;
+  });
+  if(compras.length!==before){
+    localStorage.setItem('compras',JSON.stringify(compras));
+    scheduleSync();
+  }
+}
+
+function checkLowStock(catId){
+  cleanAutoCompras();
+  const stock=loadStock();const cat=loadCatalog().find(p=>p.id===catId);if(!cat)return;
+  const compras=loadCompras();
+  const key='low_'+catId;
+  if(compras.find(c=>c.ref===key&&!c.done))return;
+  // ONLY trigger if a location has qty>0 AND qty<stockMin (strictly)
+  let triggerLoc=null,triggerNeeded=0;
+  ['h','f','d'].forEach(l=>{
+    const s=stock[catId]?.[l];
+    if(!s||!s.stockMin||s.stockMin<=0||s.qty<=0)return;
+    if(s.qty<s.stockMin&&!triggerLoc){
+      triggerLoc=l;
+      triggerNeeded=parseFloat((s.stockMin-s.qty).toFixed(1));
+    }
+  });
+  if(triggerLoc&&triggerNeeded>0){
+    const nombre=cat.nombre+' (x'+triggerNeeded+' '+cat.unidad+')';
+    compras.push({id:Date.now().toString(),nombre,done:false,origen:triggerLoc,ref:key,auto:true});
+    saveCompras(compras);
+  }
+}
+
+function checkVencReminders(){
+  const catalog=loadCatalog();const stock=loadStock();
+  catalog.forEach(p=>{
+    if(!p.reminder||p.reminder===0)return;
+    ['h','f','d'].forEach(l=>{
+      const s=stock[p.id]?.[l];
+      if(!s||s.qty<=0||!s.venc)return;
+      const dl=daysLeft(s.venc);
+      if(dl!==null&&dl<=p.reminder&&dl>=0){
+        const key='rem_'+p.id+'_'+l+'_'+s.venc;
+        if(!localStorage.getItem(key)){
+          const locName={h:'heladera',f:'freezer',d:'despensa'}[l];
+          if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+            try{new Notification('Vence pronto',{body:p.nombre+' en '+locName+': '+dl+' día'+(dl!==1?'s':'')});}catch(e){}
+          }
+          localStorage.setItem(key,'1');
+        }
+      }
+    });
+  });
+}
+
+// Smart alerts
+function renderSmartAlerts(){
+  const catalog=loadCatalog();const stock=loadStock();
+  const alerts=[];
+  catalog.forEach(p=>{
+    ['h','f','d'].forEach(l=>{
+      const s=stock[p.id]?.[l];
+      if(!s||s.qty<=0)return;
+      if(s.venc){const dl=daysLeft(s.venc);if(dl!==null&&dl<=2&&dl>=0)alerts.push({nombre:p.nombre,msg:'vence en '+(dl===0?'HOY':dl+' día'+(dl!==1?'s':''))+'',loc:l,catId:p.id});}
+    });
+  });
+  const el=document.getElementById('smartAlerts');
+  if(!alerts.length){el.innerHTML='';return;}
+  el.innerHTML=alerts.slice(0,3).map(a=>'<div class="smart-alert">⚠️ <span><b>'+a.nombre+'</b> '+a.msg+'</span><button onclick="addToComprasFromAlert(\''+a.catId+'\',\''+a.loc+'\')">+ Compras</button></div>').join('');
+}
+function addToComprasFromAlert(catId,l){
+  const cat=loadCatalog().find(p=>p.id===catId);if(!cat)return;
+  const compras=loadCompras();
+  if(!compras.find(c=>c.ref==='alert_'+catId)){
+    compras.push({id:Date.now().toString(),nombre:cat.nombre,done:false,origen:l,ref:'alert_'+catId,auto:true});
+    saveCompras(compras);toast('Agregado a compras');renderCompras();
+  }
+}
+
+// Gemini
+async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg',retries=3){
+  const parts=[];
+  if(imageBase64)parts.push({inlineData:{mimeType,data:imageBase64}});
+  parts.push({text:prompt});
+  for(let i=0;i<retries;i++){
+    try{
+      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+getKey('gemini_key'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1}})});
+      const data=await resp.json();
+      if(data.error){
+        // If overloaded, wait and retry
+        if(data.error.message&&data.error.message.includes('high demand')&&i<retries-1){
+          await new Promise(r=>setTimeout(r,2000*(i+1)));
+          continue;
+        }
+        throw new Error(data.error.message);
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    }catch(e){
+      if(i===retries-1)throw e;
+      await new Promise(r=>setTimeout(r,2000*(i+1)));
+    }
+  }
+}
+
+function getLocItems(l){
+  const cat=loadCatalog();const stock=loadStock();
+  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null};}).filter(Boolean);
+}
+function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
+
+function setLoc(l){
+  loc=l;currentCat='Todos';
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats'].forEach(x=>{
+    const el=document.getElementById('lt-'+x);
+    if(el)el.className='loc-tab '+x+(x===l?' active '+x:'');
+  });
+  document.getElementById('fab').className='fab '+l;
+  const navTabs=document.getElementById('navTabs');
+  const invLocs=['h','f','d'];
+  if(invLocs.includes(l)){
+    navTabs.style.display='flex';
+    document.querySelectorAll('.nav-tab').forEach(t=>{t.className=t.className.replace(/\bh\b|\bf\b|\bd\b/g,l);});
+    showScreens(['inv','venc','rec','stats']);
+    setNav(['inv','venc','rec','stats'].includes(nav)?nav:'inv');
+  } else {
+    navTabs.style.display='none';
+    if(l==='cat'){showScreens(['cat']);renderCatalog();}
+    else if(l==='comp'){showScreens(['comp']);renderCompras();renderSmartCompras();}
+    else if(l==='chat'){showScreens(['chat']);renderChat();lastSeenChat=loadChat().length;localStorage.setItem('lastSeenChat',String(lastSeenChat));updateChatBadge();}
+    else if(l==='hist'){showScreens(['hist']);renderHist();}
+    else if(l==='gstats'){showScreens(['gstats']);renderGStats();}
+    else if(l==='rec2'){
+      showScreens(['rec2']);
+      // Select all by default on first open
+      if(selectedIngredients.size===0)selectAllIngredients(true);
+      renderRec2();
+    }
+  }
+  if(invLocs.includes(l))renderAll();
+}
+
+function showScreens(active){
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats'].forEach(s=>{
+    const el=document.getElementById('sc-'+s);
+    if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
+  });
+}
+
+function setNav(n){
+  nav=n;
+  ['inv','venc','rec','stats'].forEach(s=>{
+    const sc=document.getElementById('sc-'+s);const nt=document.getElementById('nt-'+s);
+    if(sc){sc.classList.toggle('active',s===n);sc.style.display=s===n?'block':'none';}
+    if(nt)nt.classList.toggle('active',s===n);
+  });
+  if(n==='stats')renderStatsPage();
+}
+
+function getCatsForLoc(l){return l==='h'?CATS_H:l==='f'?CATS_F:CATS_D;}
+function toggleSort(){sortByVenc=!sortByVenc;renderAll();}
+
+function renderAll(){renderStatsRow();renderCatFilter();renderInventory();renderVenc();renderSmartAlerts();checkVencReminders();}
+
+function renderStatsRow(){
+  const all=getAllStocked();
+  // Global search mode
+  const q=document.getElementById('searchInput')?.value?.toLowerCase().trim();
+  const isGlobal=q&&q.length>0;
+  const items=isGlobal?all:getLocItems(loc);
+  const vencidos=items.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
+  const bajos=items.filter(i=>i.stockMin>0&&i.qty<=i.stockMin).length;
+  document.getElementById('statsRow').innerHTML=
+    '<div class="stat '+loc+'"><div class="stat-val '+loc+'">'+(isGlobal?all.length:items.length)+'</div><div class="stat-lbl">'+(isGlobal?'Total':'Productos')+'</div></div>'+
+    '<div class="stat '+loc+'"><div class="stat-val '+loc+'" style="'+((vencidos+bajos)>0?'color:#A32D2D':'')+'">'+vencidos+' venc. · '+bajos+' bajo</div><div class="stat-lbl">Alertas</div></div>';
+}
+
+function renderCatFilter(){
+  const items=getLocItems(loc);const cats=['Todos',...new Set(items.map(i=>i.cat))];const CATS=getCatsForLoc(loc);
+  document.getElementById('catFilter').innerHTML=cats.map(c=>'<button class="cat-pill'+(c===currentCat?' active '+loc:'')+'" onclick="filterCat(\''+c+'\')">'+( c==='Todos'?'Todos':(CATS[c]||ALL_CATS[c]||'📦')+' '+c)+'</button>').join('');
+  document.getElementById('sortBtn').className='sort-btn'+(sortByVenc?' active '+loc:'');
+}
+function filterCat(c){currentCat=c;renderCatFilter();renderInventory();}
+
+function renderInventory(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  // Global search across all locations
+  let items=q?getAllStocked().filter(i=>i.nombre.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q)):getLocItems(loc);
+  if(!q&&currentCat!=='Todos')items=items.filter(i=>i.cat===currentCat);
+  if(sortByVenc)items.sort((a,b)=>{if(!a.venc&&!b.venc)return 0;if(!a.venc)return 1;if(!b.venc)return-1;return new Date(a.venc)-new Date(b.venc);});
+  const CATS=getCatsForLoc(loc);const el=document.getElementById('itemList');
+  if(!items.length){el.innerHTML='<div class="empty">'+(q?'Sin resultados':'Sin productos. Asigná desde el Catálogo.')+'</div>';return;}
+  const p=getProfile();
+  el.innerHTML=items.map(item=>{
+    const isLow=item.stockMin>0&&item.qty<=item.stockMin;const curLoc=item.loc||loc;
+    return '<div class="swipe-outer" id="so-'+item.id+'_'+curLoc+'"><div class="swipe-reveal">🗑</div>'+
+      '<div class="swipe-card" id="swc-'+item.id+'_'+curLoc+'"><div class="item-row">'+
+      '<div class="item-icon" style="background:'+(COLORS[item.cat]||'#F1EFE8')+'">'+(item.img?'<img src="'+item.img+'" alt="" onclick="openImgViewer(this.src)" style="cursor:zoom-in">':(CATS[item.cat]||ALL_CATS[item.cat]||'📦'))+'</div>'+
+      '<div class="item-info">'+
+        '<div class="item-name">'+item.nombre+'</div>'+
+        '<div class="item-meta">'+
+          (q?'<span class="badge-lugar '+curLoc+'">'+(curLoc==='h'?'🧊':curLoc==='f'?'❄️':'🫙')+'</span> ':'')+
+          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+
+        '</div>'+
+        (item.lastBy?'<div class="item-by">por '+item.lastBy+'</div>':'')+
+      '</div>'+
+      '<div class="item-actions">'+
+        '<div class="qty-ctrl">'+
+          '<button class="qty-btn" onclick="changeQty(\''+item.id+'\',\''+curLoc+'\',-1)">−</button>'+
+          '<span class="qty-num">'+item.qty+'</span>'+
+          '<button class="qty-btn" onclick="changeQty(\''+item.id+'\',\''+curLoc+'\',1)">+</button>'+
+        '</div>'+
+        '<button class="icon-btn" onclick="openAssignModal(\''+item.id+'\')">✏️</button>'+
+      '</div>'+
+      '</div></div></div>';
+  }).join('');
+  items.forEach(i=>initSwipe(i.id+'_'+(i.loc||loc),i.id,(i.loc||loc)));
+}
+
+function initSwipe(uid,catId,l){
+  const card=document.getElementById('swc-'+uid);if(!card)return;
+  let sx=0,cx=0,drag=false;
+  card.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;drag=true;},{passive:true});
+  card.addEventListener('touchmove',e=>{if(!drag)return;cx=e.touches[0].clientX-sx;if(cx>0)cx=0;card.style.transition='none';card.style.transform='translateX('+Math.max(cx,-80)+'px)';},{passive:true});
+  card.addEventListener('touchend',()=>{drag=false;if(cx<-65){card.style.transition='transform .2s';card.style.transform='translateX(-100%)';setTimeout(()=>removeFromLoc(catId,l),200);}else{card.style.transition='transform .2s';card.style.transform='translateX(0)';}cx=0;});
+}
+
+function getItemStep(catId){
+  const cat=loadCatalog().find(p=>p.id===catId);
+  const u=cat?.unidad||'unid';
+  return(u==='kg'||u==='g'||u==='L'||u==='ml')?0.1:1;
+}
+function changeQty(catId,l,delta){
+  const step=getItemStep(catId);
+  const stock=loadStock();
+  if(!stock[catId])stock[catId]={};
+  if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
+  stock[catId][l].qty=Math.max(0,parseFloat((stock[catId][l].qty+delta*step).toFixed(1)));
+  const p=getProfile();
+  stock[catId][l].lastBy=p?.name||null;
+  saveStock(stock);
+  if(delta<0)addHistEntry(catId,'consumido',Math.abs(delta));
+  checkLowStock(catId);renderAll();
+}
+
+function removeFromLoc(catId,l){
+  const stock=loadStock();if(stock[catId]&&stock[catId][l])stock[catId][l].qty=0;
+  saveStock(stock);renderAll();toast('Quitado');
+}
+
+function renderVenc(){
+  const isCur=document.getElementById('vt-cur').classList.contains('active');
+  let items=isCur?getLocItems(loc):getAllStocked();
+  items=items.filter(i=>i.venc).sort((a,b)=>new Date(a.venc)-new Date(b.venc));
+  const el=document.getElementById('vencContent');
+  if(!items.length){el.innerHTML='<div class="empty">No hay productos con fecha de vencimiento</div>';return;}
+  const groups=[{label:'Vencidos',items:items.filter(i=>daysLeft(i.venc)<0)},{label:'En 3 días',items:items.filter(i=>daysLeft(i.venc)>=0&&daysLeft(i.venc)<=3)},{label:'Esta semana',items:items.filter(i=>daysLeft(i.venc)>3&&daysLeft(i.venc)<=7)},{label:'Más adelante',items:items.filter(i=>daysLeft(i.venc)>7)}];
+  el.innerHTML=groups.filter(g=>g.items.length).map(g=>'<div class="section-lbl">'+g.label+'</div>'+g.items.map(i=>{const CATS=getCatsForLoc(i.loc||loc);return'<div class="item-row"><div class="item-icon" style="background:'+(COLORS[i.cat]||'#F1EFE8')+'">'+(i.img?'<img src="'+i.img+'" alt="">':(CATS[i.cat]||ALL_CATS[i.cat]||'📦'))+'</div><div class="item-info"><div class="item-name">'+i.nombre+'</div><div class="item-meta">'+new Date(i.venc+'T00:00:00').toLocaleDateString('es-AR')+' <span class="badge-lugar '+(i.loc||loc)+'">'+(i.loc==='h'?'🧊':i.loc==='f'?'❄️':'🫙')+'</span></div></div>'+getBadge(i.venc)+'</div>';}).join('')).join('');
+}
+function setVencView(v){document.getElementById('vt-cur').classList.toggle('active',v==='cur');document.getElementById('vt-all').classList.toggle('active',v==='all');renderVenc();}
+
+// CATALOG
+function renderCatalog(){
+  const catalog=loadCatalog();const stock=loadStock();
+  const q=document.getElementById('catSearch').value.toLowerCase().trim();
+  let items=q?catalog.filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):catalog;
+  if(catCatFilter!=='Todos')items=items.filter(p=>p.cat===catCatFilter);
+  const cats=['Todos',...new Set(catalog.map(p=>p.cat))];
+  document.getElementById('catCatFilter').innerHTML=cats.map(c=>'<button class="cat-pill'+(c===catCatFilter?' active cat':'')+'" onclick="setCatCatFilter(\''+c+'\')">'+( c==='Todos'?'Todos':(ALL_CATS[c]||'📦')+' '+c)+'</button>').join('');
+  const el=document.getElementById('catalogList');
+  if(!items.length){el.innerHTML='<div class="empty">Sin productos en el catálogo.<br>Tocá + para agregar.</div>';return;}
+  el.innerHTML=items.map(p=>{
+    const s=stock[p.id]||{};const locs=[];
+    if(s.h&&s.h.qty>0)locs.push('🧊'+s.h.qty);if(s.f&&s.f.qty>0)locs.push('❄️'+s.f.qty);if(s.d&&s.d.qty>0)locs.push('🫙'+s.d.qty);
+    return '<div class="cat-product-card"><div class="item-icon" style="background:'+(COLORS[p.cat]||'#F1EFE8')+';width:44px;height:44px;font-size:22px">'+(p.img?'<img src="'+p.img+'" alt="">':(ALL_CATS[p.cat]||'📦'))+'</div><div class="cat-product-info"><div class="cat-product-name">'+p.nombre+'</div><div class="cat-product-sub">'+p.cat+(locs.length?' · '+locs.join(' '):'')+(p.reminder>0?' · 🔔'+p.reminder+'d':'')+'</div>'+(p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+'</div><div class="cat-product-actions"><button class="icon-btn" onclick="openAssignModal(\''+p.id+'\')">📍</button><button class="icon-btn" onclick="openEditCatModal(\''+p.id+'\')">✏️</button></div></div>';
+  }).join('');
+}
+function setCatCatFilter(c){catCatFilter=c;renderCatalog();}
+
+// ASSIGN MODAL
+function openAssignModal(catId){
+  const cat=loadCatalog().find(p=>p.id===catId);if(!cat)return;
+  const stock=loadStock();
+  assigningCatId=catId;
+  assignQtys={h:stock[catId]?.h?.qty||0,f:stock[catId]?.f?.qty||0,d:stock[catId]?.d?.qty||0};
+  document.getElementById('assignTitle').textContent='Asignar: '+cat.nombre;
+  document.getElementById('assignName').textContent=cat.nombre;
+  document.getElementById('assignSub').textContent=cat.cat+' · '+cat.unidad;
+  const iconEl=document.getElementById('assignIcon');iconEl.style.background=COLORS[cat.cat]||'#F1EFE8';
+  iconEl.innerHTML=cat.img?'<img src="'+cat.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">':(ALL_CATS[cat.cat]||'📦');
+  document.getElementById('aqh').textContent=assignQtys.h;document.getElementById('aqf').textContent=assignQtys.f;document.getElementById('aqd').textContent=assignQtys.d;
+  // Read venc and stockMin from whichever location has qty > 0, fallback to max stockMin
+  const allLocs=['h','f','d'].map(l=>stock[catId]?.[l]||{});
+  const activeStock=allLocs.find(s=>s.qty>0)||allLocs[0]||{};
+  const maxStockMin=Math.max(...allLocs.map(s=>s.stockMin||0));
+  document.getElementById('assignVenc').value=activeStock.venc||'';
+  document.getElementById('assignMin').value=maxStockMin||0;
+  // Restore abierto state
+  const wasAbierto=activeStock.abierto||false;
+  aiSuggestedDate=null;
+  const aiEl=document.getElementById('aiDateSuggest');
+  if(FRESH_CATS.includes(cat.cat)&&DURACION[cat.cat]){
+    const dias=DURACION[cat.cat];
+    let txt='';aiSuggestedDate={};
+    if(dias.h){const hDate=addDays(dias.h);txt+='Heladera: ~'+dias.h+' días ('+new Date(hDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.h=hDate;}
+    if(dias.f){const fDate=addDays(dias.f);txt+='Freezer: ~'+dias.f+' días ('+new Date(fDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.f=fDate;}
+    if(dias.d){const dDate=addDays(dias.d);txt+='Despensa: ~'+Math.round(dias.d/30)+' meses ('+new Date(dDate+'T00:00:00').toLocaleDateString('es-AR')+')';aiSuggestedDate.d=dDate;}
+    document.getElementById('aiDateText').textContent=txt;
+    aiEl.style.display='block';
+  } else {aiEl.style.display='none';}
+  isAbierto=wasAbierto;abiertoDateSuggested=null;
+  const ac=document.getElementById('abiertoCheck');
+  if(ac){
+    ac.style.background=wasAbierto?'#E8A020':'transparent';
+    ac.style.borderColor=wasAbierto?'#E8A020':'var(--border2)';
+    ac.textContent=wasAbierto?'✓':'';
+  }
+  const ads=document.getElementById('abiertoDateSuggest');if(ads)ads.style.display='none';
+  document.getElementById('assignModalBg').classList.add('open');
+}
+function applyAiDate(){
+  if(!aiSuggestedDate)return;
+  let date=null;
+  // Priority: heladera first if has qty, then freezer, then despensa
+  if(assignQtys.h>0&&aiSuggestedDate.h)date=aiSuggestedDate.h;
+  else if(assignQtys.f>0&&aiSuggestedDate.f)date=aiSuggestedDate.f;
+  else if(assignQtys.d>0&&aiSuggestedDate.d)date=aiSuggestedDate.d;
+  else date=aiSuggestedDate.h||aiSuggestedDate.f||aiSuggestedDate.d;
+  if(date){document.getElementById('assignVenc').value=date;toast('Fecha aplicada');}
+}
+function getQtyStep(){
+  // Check current product's unit to decide step
+  const sub=document.getElementById('assignSub')?.textContent||'';
+  return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.1:1;
+}
+function changeAssignQty(l,delta){
+  const step=getQtyStep();
+  assignQtys[l]=Math.max(0,parseFloat((assignQtys[l]+delta*step).toFixed(1)));
+  document.getElementById('aq'+l).textContent=assignQtys[l];
+}
+function saveAssignment(){
+  const stock=loadStock();if(!stock[assigningCatId])stock[assigningCatId]={};
+  const venc=document.getElementById('assignVenc').value||null;
+  const min=parseFloat(document.getElementById('assignMin').value)||0;
+  const p=getProfile();
+  // Save stock — only apply stockMin to locations with qty > 0
+  ['h','f','d'].forEach(l=>{
+    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto};
+  });
+  // Save first, then remove any existing auto compra ref for this item (stale)
+  localStorage.setItem('stock2',JSON.stringify(stock));
+  const compras=loadCompras().filter(c=>!(c.ref==='low_'+assigningCatId&&c.auto));
+  localStorage.setItem('compras',JSON.stringify(compras));
+  // Now re-check with clean data
+  checkLowStock(assigningCatId);
+  scheduleSync();
+  addHistEntry(assigningCatId,'agregado',0);
+  closeAssignModal();renderAll();renderCatalog();renderCompras();toast('Guardado!');
+}
+function handleAssignPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const cat=loadCatalog();const idx=cat.findIndex(p=>p.id===assigningCatId);
+    if(idx<0)return;
+    cat[idx].img=e.target.result;
+    saveCatalog(cat);
+    // Update icon in modal
+    const icon=document.getElementById('assignIcon');
+    icon.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+    toast('Foto actualizada');
+  };
+  reader.readAsDataURL(file);
+}
+let isAbierto=false,abiertoDateSuggested=null;
+function toggleAbierto(){
+  isAbierto=!isAbierto;
+  const c=document.getElementById('abiertoCheck');
+  c.style.background=isAbierto?'#E8A020':'transparent';c.style.borderColor=isAbierto?'#E8A020':'var(--border2)';c.textContent=isAbierto?'✓':'';
+  if(isAbierto)calcAbiertoDate();else document.getElementById('abiertoDateSuggest').style.display='none';
+}
+async function calcAbiertoDate(){
+  const cat=loadCatalog().find(p=>p.id===assigningCatId);if(!cat)return;
+  const sug=document.getElementById('abiertoDateSuggest');const dt=document.getElementById('abiertoDateText');
+  sug.style.display='block';dt.textContent='calculando...';
+  try{
+    const l=assignQtys.f>0?'freezer':assignQtys.h>0?'heladera':'despensa';
+    const text=await callGemini('El producto "'+cat.nombre+'" categoría "'+cat.cat+'" fue abierto y está en '+l+'. ¿Cuántos días dura una vez abierto? Respondé SOLO con un número entero.');
+    const dias=parseInt(text.trim().replace(/\D/g,''));
+    if(dias>0){abiertoDateSuggested=addDays(dias);dt.textContent='~'+dias+' días ('+new Date(abiertoDateSuggested+'T00:00:00').toLocaleDateString('es-AR')+')';}
+    else dt.textContent='No se pudo calcular';
+  }catch(e){dt.textContent='Error al consultar IA';}
+}
+function applyAbiertoDate(){if(abiertoDateSuggested){document.getElementById('assignVenc').value=abiertoDateSuggested;toast('Fecha aplicada');}}
+function closeAssignModal(){document.getElementById('assignModalBg').classList.remove('open');}
+
+// CATALOG EDIT
+function handleAddModalPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentProductImg=e.target.result;
+    const prev=document.getElementById('addImgPreview');
+    if(prev)prev.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+  };
+  reader.readAsDataURL(file);
+}
+function handleEditCatPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentEditCatImg=e.target.result;
+    const prev=document.getElementById('ecImgPreview');
+    prev.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover">';
+  };
+  reader.readAsDataURL(file);
+}
+function clearEditCatPhoto(){
+  currentEditCatImg=null;
+  document.getElementById('ecImgPreview').innerHTML='📦';
+}
+let currentEditCatImg=null;
+
+function openEditCatModal(id){
+  editingCatId=id;const p=loadCatalog().find(x=>x.id===id);if(!p)return;
+  document.getElementById('ecNombre').value=p.nombre;document.getElementById('ecCat').value=p.cat;
+  document.getElementById('ecUnidad').value=p.unidad||'unid';document.getElementById('ecNota').value=p.nota||'';
+  document.getElementById('ecReminder').value=p.reminder||0;
+  // Load existing photo
+  currentEditCatImg=p.img||null;
+  const prev=document.getElementById('ecImgPreview');
+  if(p.img){prev.innerHTML='<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover">';}
+  else{prev.innerHTML='📦';}
+  document.getElementById('editCatModalBg').classList.add('open');
+}
+function saveEditCatalog(){
+  const cat=loadCatalog();const idx=cat.findIndex(p=>p.id===editingCatId);if(idx<0)return;
+  cat[idx].nombre=document.getElementById('ecNombre').value.trim()||cat[idx].nombre;
+  cat[idx].cat=document.getElementById('ecCat').value;cat[idx].unidad=document.getElementById('ecUnidad').value;
+  cat[idx].nota=document.getElementById('ecNota').value.trim()||null;
+  cat[idx].reminder=parseInt(document.getElementById('ecReminder').value)||0;
+  if(currentEditCatImg!==undefined)cat[idx].img=currentEditCatImg;
+  saveCatalog(cat);closeEditCatModal();renderCatalog();renderAll();toast('Guardado');
+}
+function deleteCatalogItem(){
+  if(!confirm('¿Eliminar del catálogo?'))return;
+  saveCatalog(loadCatalog().filter(p=>p.id!==editingCatId));
+  const stock=loadStock();delete stock[editingCatId];saveStock(stock);
+  closeEditCatModal();renderCatalog();renderAll();toast('Eliminado');
+}
+function closeEditCatModal(){document.getElementById('editCatModalBg').classList.remove('open');editingCatId=null;}
+
+// ADD MODAL
+function openAddModal(){
+  document.getElementById('fNombre').value='';document.getElementById('fNota').value='';
+  document.getElementById('barcodeResult').style.display='none';document.getElementById('productFound').style.display='none';
+  document.getElementById('barcodePreview').style.display='none';document.getElementById('manualBarcodeWrap').style.display='none';
+  document.getElementById('barcodeStatus').className='ai-status';document.getElementById('uploadPreview').style.display='none';
+  document.getElementById('uploadLabel').style.display='block';document.getElementById('aiStatus').className='ai-status';
+  currentProductImg='';const aip=document.getElementById('addImgPreview');if(aip)aip.innerHTML='📦';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
+}
+function closeAddModal(){document.getElementById('addModalBg').classList.remove('open');}
+function closeAddModalBg(e){if(e.target===document.getElementById('addModalBg'))closeAddModal();}
+function setAddMethod(m){addMethod=m;['barcode','photo','manual'].forEach(x=>{document.getElementById('mb-'+x).className='method-btn'+(x===m?' active':'');document.getElementById('add-sec-'+x).classList.toggle('active',x===m);});}
+
+function saveCatalogItem(){
+  const nombre=document.getElementById('fNombre').value.trim();if(!nombre){alert('Ingresá el nombre');return;}
+  const cat=loadCatalog();
+  if(cat.find(p=>p.nombre.toLowerCase()===nombre.toLowerCase())&&!confirm('"'+nombre+'" ya existe. ¿Agregar igual?'))return;
+  const newItem={id:Date.now().toString(),nombre,cat:document.getElementById('fCat').value,unidad:document.getElementById('fUnidad').value,nota:document.getElementById('fNota').value.trim()||null,img:currentProductImg||null,reminder:0};
+  cat.push(newItem);saveCatalog(cat);closeAddModal();
+  // Open assign modal immediately
+  if(['h','f','d'].includes(loc))renderAll();else renderCatalog();
+  setTimeout(()=>openAssignModal(newItem.id),200);
+}
+
+// BARCODE
+async function scanBarcodeFromPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const preview=document.getElementById('barcodePreview');preview.src=URL.createObjectURL(file);preview.style.display='block';
+  const res=document.getElementById('barcodeResult');res.style.display='block';res.textContent='Detectando...';
+  try{
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+      const img=new Image();img.src=preview.src;await new Promise(r=>img.onload=r);
+      const codes=await detector.detect(img);
+      if(codes.length>0){res.textContent='Código: '+codes[0].rawValue;await lookupBarcode(codes[0].rawValue);return;}
+    }
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      const base64=e.target.result.split(',')[1];
+      try{const text=await callGemini('Leé el código de barras. Respondé SOLO el número.',base64,file.type||'image/jpeg');const code=text.trim().replace(/\D/g,'');if(code&&code.length>4){res.textContent='Código: '+code;await lookupBarcode(code);}else{res.textContent='No detectado.';document.getElementById('manualBarcodeWrap').style.display='block';}}catch(e){res.textContent='Error.';document.getElementById('manualBarcodeWrap').style.display='block';}
+    };reader.readAsDataURL(file);
+  }catch(e){res.textContent='Error.';document.getElementById('manualBarcodeWrap').style.display='block';}
+}
+function lookupManualBarcode(){const code=document.getElementById('manualBarcode').value.trim();if(!code){toast('Ingresá un código');return;}document.getElementById('barcodeResult').style.display='block';document.getElementById('barcodeResult').textContent='Código: '+code;lookupBarcode(code);}
+async function lookupBarcode(code){
+  const st=document.getElementById('barcodeStatus');st.textContent='Buscando...';st.className='ai-status visible';
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json');const d=await r.json();st.className='ai-status';
+    if(d.status===1&&d.product){
+      const p=d.product;const nombre=p.product_name_es||p.product_name||'';const img=p.image_small_url||'';const cats=p.categories||'';
+      let cat='Otros';
+      if(/leche|yogur|queso|manteca|crema/i.test(cats+nombre))cat='Lácteos';else if(/pollo|carne|res|cerdo|vacuno/i.test(cats+nombre))cat='Carnes y aves';else if(/pescado|atún|salmón/i.test(cats+nombre))cat='Pescados';else if(/fiambre|jamón|salchicha/i.test(cats+nombre))cat='Fiambres';else if(/verdura|vegetal/i.test(cats+nombre))cat='Verduras';else if(/fruta/i.test(cats+nombre))cat='Frutas';else if(/bebida|agua|gaseosa|jugo/i.test(cats+nombre))cat='Bebidas';else if(/harina|cereal/i.test(cats+nombre))cat='Harinas y cereales';else if(/arroz|pasta|fideos/i.test(cats+nombre))cat='Arroz y pastas';else if(/aceite/i.test(cats+nombre))cat='Aceites';else if(/conserva|lata/i.test(cats+nombre))cat='Conservas';else if(/snack|galleta/i.test(cats+nombre))cat='Snacks';else if(/especia|hierba/i.test(cats+nombre))cat='Especias';else if(/congelado/i.test(cats+nombre))cat='Congelados';
+      if(nombre)document.getElementById('fNombre').value=nombre;document.getElementById('fCat').value=cat;currentProductImg=img;
+      if(img){const pf=document.getElementById('productFound');pf.style.display='flex';document.getElementById('pfImg').src=img;document.getElementById('pfName').textContent=nombre;document.getElementById('pfSub').textContent='Categoría: '+cat;}
+      toast('Encontrado!');
+    }else{st.textContent='No encontrado.';st.className='ai-status visible';}
+  }catch(e){document.getElementById('barcodeStatus').textContent='Error.';document.getElementById('barcodeStatus').className='ai-status visible';}
+}
+async function handlePhoto(input){
+  const file=input.files[0];if(!file)return;
+  const preview=document.getElementById('uploadPreview');const label=document.getElementById('uploadLabel');const st=document.getElementById('aiStatus');
+  label.style.display='none';st.textContent='Analizando...';st.className='ai-status visible';
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    preview.src=e.target.result;preview.style.display='block';
+    const base64=e.target.result.split(',')[1];const catList=Object.keys(ALL_CATS).join(', ');
+    try{const text=await callGemini('Analizá este producto. SOLO JSON sin backticks:\n{"nombre":"...","categoria":"una de: '+catList+'"}',base64,file.type||'image/jpeg');const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());if(parsed.nombre)document.getElementById('fNombre').value=parsed.nombre;if(parsed.categoria)document.getElementById('fCat').value=parsed.categoria;st.className='ai-status';}
+    catch(err){st.textContent='Error.';st.className='ai-status visible';}
+  };reader.readAsDataURL(file);
+}
+
+// RECETAS
+async function sugerirRecetas(){
+  const btn=document.getElementById('btnSugerir');btn.disabled=true;btn.textContent='Pensando...';
+  const all=getAllStocked().filter(i=>i.qty>0);const lista=all.map(i=>i.nombre+' ('+i.qty+' '+i.unidad+')').join(', ');
+  document.getElementById('recetaResults').innerHTML='<div class="receta-loading">✨ Analizando tu stock...</div>';
+  try{const text=await callGemini('Tengo: '+lista+'.\n3 recetas posibles. SOLO JSON:\n[{"nombre":"...","ingredientes_usados":["..."],"pasos":["..."],"opcional":"..."}]');const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());document.getElementById('recetaResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">🍳 '+r.nombre+'</div><div class="receta-tags">'+(r.ingredientes_usados||[]).map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div>'+(r.opcional?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>':'')+'</div>').join('');}
+  catch(e){document.getElementById('recetaResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
+  btn.disabled=false;btn.textContent='✨ Sugerir con lo que tengo';
+}
+async function checkReceta(){
+  const query=document.getElementById('recetaQuery').value.trim();if(!query)return;
+  const lista=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase()).join(', ');
+  document.getElementById('recetaResults').innerHTML='<div class="receta-loading">🔍 Revisando...</div>';
+  try{const text=await callGemini('Quiero hacer: "'+query+'"\nTengo: '+lista+'.\nSOLO JSON:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');const r=JSON.parse(text.replace(/```json|```/g,'').trim());const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);document.getElementById('recetaResults').innerHTML='<div class="receta-card"><div class="receta-title">'+(r.se_puede_hacer?'✅':'❌')+' '+r.receta+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:10px">'+r.nota+'</div>'+(r.ingredientes||[]).map(ing=>'<div class="falta-row"><span class="falta-nombre">'+ing.nombre+(ing.esencial?'':' <span style="font-size:11px;color:var(--text3)">(opt)</span>')+'</span><span class="falta-estado '+(ing.tengo?'tengo':'falta')+'">'+(ing.tengo?'✓ Tengo':'✗ Falta')+'</span></div>').join('')+(faltanEsenciales.length?'<button class="btn-secondary" style="margin-top:10px" onclick="agregarFaltantes('+JSON.stringify(faltanEsenciales.map(i=>i.nombre))+')">+ Agregar a compras</button>':'')+'</div>';}
+  catch(e){document.getElementById('recetaResults').innerHTML='<div class="empty">Error</div>';}
+}
+function agregarFaltantes(nombres){const compras=loadCompras();let n=0;nombres.forEach(nom=>{if(!compras.find(c=>c.nombre.toLowerCase()===nom.toLowerCase())){compras.push({id:Date.now().toString()+Math.random(),nombre:nom,done:false,origen:loc});n++;}});saveCompras(compras);toast(n+' ítem'+(n!==1?'s':'')+' agregado'+(n!==1?'s':''));}
+
+// STATS
+function renderStatsPage(){
+  const all=getAllStocked();const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
+  const locCnt={h:getLocItems('h').length,f:getLocItems('f').length,d:getLocItems('d').length};
+  const catCnt={};all.forEach(i=>{catCnt[i.cat]=(catCnt[i.cat]||0)+i.qty;});
+  const topCat=Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);const maxCat=topCat[0]?.[1]||1;
+  // Consumption from hist
+  const hist=loadHist();const hace7=new Date();hace7.setDate(hace7.getDate()-7);
+  const cons=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace7);
+  const consCnt={};cons.forEach(h=>{consCnt[h.nombre]=(consCnt[h.nombre]||0)+(h.delta||1);});
+  const topCons=Object.entries(consCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);const maxCons=topCons[0]?.[1]||1;
+  document.getElementById('statsContent').innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div class="stat h"><div class="stat-val h">'+locCnt.h+'</div><div class="stat-lbl">🧊 Heladera</div></div>'+
+      '<div class="stat f"><div class="stat-val f">'+locCnt.f+'</div><div class="stat-lbl">❄️ Freezer</div></div>'+
+      '<div class="stat d"><div class="stat-val d">'+locCnt.d+'</div><div class="stat-lbl">🫙 Despensa</div></div>'+
+    '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div class="stat cat"><div class="stat-val cat">'+loadCatalog().length+'</div><div class="stat-lbl">En catálogo</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(vencidos>0?'color:#A32D2D':'')+'">'+vencidos+'</div><div class="stat-lbl">Vencidos</div></div>'+
+    '</div>'+
+    (topCons.length?'<div class="card"><div class="section-lbl">Más consumidos (7 días)</div>'+topCons.map(([n,v])=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:13px;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#1D9E75;width:'+Math.round(v/maxCons*100)+'%"></div></div><div style="font-size:12px;color:var(--text2);min-width:24px;text-align:right">'+v+'</div></div>').join('')+'</div>':'')+
+    (topCat.length?'<div class="card"><div class="section-lbl">Stock por categoría</div>'+topCat.map(([n,v])=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:13px;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#378ADD;width:'+Math.round(v/maxCat*100)+'%"></div></div><div style="font-size:12px;color:var(--text2);min-width:24px;text-align:right">'+v+'</div></div>').join('')+'</div>':'');
+}
+
+// COMPRAS
+function setCompView(v){
+  compView=v;
+  document.getElementById('compListView').style.display=v==='list'?'block':'none';
+  document.getElementById('compShopView').style.display=v==='shop'?'block':'none';
+  if(v==='shop')renderShopList();
+}
+function renderSmartCompras(){
+  const compras=loadCompras().filter(c=>c.auto&&!c.done);
+  const el=document.getElementById('smartCompras');
+  if(!compras.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="smart-alert">🤖 <span>'+compras.length+' ítem'+(compras.length!==1?'s':'')+' agregado'+(compras.length!==1?'s':'')+' automáticamente</span></div>';
+}
+function renderCompras(){
+  const compras=loadCompras();const el=document.getElementById('compraList');
+  if(!compras.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin ítems</div>';return;}
+  el.innerHTML=compras.map(c=>'<div class="compra-item"><div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div><span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+(c.auto?' <span style="font-size:10px;color:var(--text3)">auto</span>':'')+'</span><span class="badge-lugar '+(c.origen||'h')+'">'+(c.origen==='d'?'🫙':c.origen==='f'?'❄️':'🧊')+'</span><button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button></div>').join('');
+}
+function renderShopList(){
+  const compras=loadCompras().filter(c=>!c.done);
+  const el=document.getElementById('shopList');
+  if(!compras.length){el.innerHTML='<div class="empty">¡Lista vacía! Todo comprado.</div>';return;}
+  el.innerHTML=compras.map(c=>'<div class="shop-item'+(c.shopDone?' bought':'')+'" onclick="toggleShopItem(\''+c.id+'\')">'+
+    '<div class="shop-item-icon" style="background:'+(COLORS['Otros']||'#F1EFE8')+'">'+(ALL_CATS['Otros']||'📦')+'</div>'+
+    '<div class="shop-item-name">'+c.nombre+'</div>'+
+    '<div class="shop-check'+(c.shopDone?' done':'')+'">'+(c.shopDone?'✓':'')+'</div>'+
+  '</div>').join('');
+}
+function toggleShopItem(id){
+  const compras=loadCompras();const c=compras.find(x=>x.id===id);if(c){c.shopDone=!c.shopDone;if(c.shopDone)c.done=true;}
+  saveCompras(compras);renderShopList();renderCompras();
+  const remaining=compras.filter(x=>!x.done).length;
+  if(remaining===0)toast('🎉 ¡Compras completadas!');
+}
+function shareCompras(){const c=loadCompras().filter(x=>!x.done);if(!c.length){toast('Lista vacía');return;}window.open('https://wa.me/?text='+encodeURIComponent('🛒 *Lista de compras*\n\n'+c.map(x=>'• '+x.nombre).join('\n')),'_blank');}
+function toggleCompra(id){const c=loadCompras();const f=c.find(x=>x.id===id);if(f){f.done=!f.done;if(f.done){addHistEntry&&null;const h=loadHist();const p=getProfile();h.unshift({id:Date.now().toString(),nombre:f.nombre,cat:'Compras',accion:'comprado',delta:1,by:p?.name||'?',byColor:p?.color||'#666',ts:new Date().toISOString(),loc:f.origen||'h'});saveHist(h);}}saveCompras(c);renderCompras();}
+function deleteCompra(id){saveCompras(loadCompras().filter(c=>c.id!==id));renderCompras();}
+function clearDoneCompras(){saveCompras(loadCompras().filter(c=>!c.done));renderCompras();toast('Limpido');}
+function addCompra(){const n=prompt('¿Qué querés agregar?');if(!n)return;const c=loadCompras();c.push({id:Date.now().toString(),nombre:n,done:false,origen:loc});saveCompras(c);renderCompras();}
+
+// CHAT
+function renderChat(){
+  const msgs=loadChat();const el=document.getElementById('chatMsgs');const p=getProfile();
+  el.innerHTML=msgs.map(m=>{
+    const isMine=m.author===p?.name;
+    return '<div class="chat-msg '+(isMine?'mine':'other')+'">'+
+      (!isMine?'<div class="chat-msg-name" style="color:'+(m.authorColor||'#666')+'">'+m.author+'</div>':'')+
+      (m.img?'<img src="'+m.img+'" alt="foto">':'')+
+      (m.text?'<div>'+m.text+'</div>':'')+
+      '<div class="chat-msg-time">'+fmtTime(m.ts)+'</div>'+
+    '</div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function sendChatMsg(){
+  const input=document.getElementById('chatInput');const text=input.value.trim();if(!text)return;
+  const p=getProfile();if(!p){toast('Configurá tu perfil primero');return;}
+  const msgs=loadChat();msgs.push({id:Date.now().toString(),author:p.name,authorColor:p.color,text,ts:new Date().toISOString()});
+  saveChat(msgs);input.value='';renderChat();
+}
+async function sendChatPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const p=getProfile();if(!p){toast('Configurá tu perfil primero');return;}
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const msgs=loadChat();
+    msgs.push({id:Date.now().toString(),author:p.name,authorColor:p.color,img:e.target.result,ts:new Date().toISOString()});
+    saveChat(msgs);renderChat();toast('Foto enviada');
+  };reader.readAsDataURL(file);
+}
+function updateChatBadge(){
+  const msgs=loadChat();const newMsgs=msgs.length-lastSeenChat;
+  const badge=document.getElementById('chatBadge');
+  if(newMsgs>0&&loc!=='chat'){badge.style.display='flex';badge.textContent=newMsgs>9?'9+':newMsgs;}
+  else badge.style.display='none';
+}
+
+// RECETAS TAB
+let rec2View='all';
+function setRec2View(v){
+  rec2View=v;
+  document.getElementById('rec2-tab-all').className='btn-primary'+(v==='all'?'':' btn-secondary');
+  document.getElementById('rec2-tab-all').style.background=v==='all'?'#E8A020':'transparent';
+  document.getElementById('rec2-tab-all').style.color=v==='all'?'#fff':'var(--text2)';
+  document.getElementById('rec2-tab-venc').className='btn-'+(v==='venc'?'primary':'secondary');
+  document.getElementById('rec2-tab-venc').style.background=v==='venc'?'#E24B4A':'transparent';
+  document.getElementById('rec2-tab-venc').style.color=v==='venc'?'#fff':'var(--text2)';
+  document.getElementById('rec2AllView').style.display=v==='all'?'block':'none';
+  document.getElementById('rec2VencView').style.display=v==='venc'?'block':'none';
+  if(v==='venc')renderVencList();
+}
+function renderRec2(){setRec2View(rec2View);renderIngList();}
+function renderIngList(){
+  const all=getAllStocked().filter(i=>i.qty>0);
+  const el=document.getElementById('rec2IngList');
+  if(!el)return;
+  if(!all.length){el.innerHTML='<div class="empty" style="padding:1rem">Sin productos en stock</div>';return;}
+  // Group by location
+  const byLoc={h:all.filter(i=>i.loc==='h'),f:all.filter(i=>i.loc==='f'),d:all.filter(i=>i.loc==='d')};
+  const locLabel={h:'🧊 Heladera',f:'❄️ Freezer',d:'🫙 Despensa'};
+  let html2='';
+  ['h','f','d'].forEach(l=>{
+    if(!byLoc[l].length)return;
+    html2+='<div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:8px 0 4px">'+locLabel[l]+'</div>';
+    html2+=byLoc[l].map(i=>{
+      const checked=selectedIngredients.has(i.id+'_'+l);
+      return '<div onclick="toggleIngredient(\''+i.id+'\',\''+l+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg4);cursor:pointer">'+
+        '<div style="width:22px;height:22px;border:2px solid '+(checked?'#E8A020':' var(--border2)')+';border-radius:6px;background:'+(checked?'#E8A020':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:#fff">'+(checked?'✓':'')+'</div>'+
+        '<div style="font-size:14px;color:var(--text);flex:1">'+i.nombre+'</div>'+
+        '<div style="font-size:12px;color:var(--text3)">'+i.qty+' '+i.unidad+'</div>'+
+      '</div>';
+    }).join('');
+  });
+  el.innerHTML=html2;
+}
+let selectedIngredients=new Set();
+function toggleIngredient(catId,l){
+  const key=catId+'_'+l;
+  if(selectedIngredients.has(key))selectedIngredients.delete(key);
+  else selectedIngredients.add(key);
+  renderIngList();
+}
+function selectAllIngredients(sel){
+  selectedIngredients.clear();
+  if(sel){getAllStocked().filter(i=>i.qty>0).forEach(i=>selectedIngredients.add(i.id+'_'+i.loc));}
+  renderIngList();
+}
+function renderVencList(){
+  const all=getAllStocked().filter(i=>i.venc);
+  const proximos=all.filter(i=>{const dl=daysLeft(i.venc);return dl!==null&&dl<=7&&dl>=0;}).sort((a,b)=>new Date(a.venc)-new Date(b.venc));
+  const el=document.getElementById('rec2VencList');
+  if(!proximos.length){el.innerHTML='No hay productos próximos a vencer (en 7 días).';return;}
+  el.innerHTML=proximos.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg4)"><span>'+( ALL_CATS[i.cat]||'📦')+'</span><span style="flex:1;font-weight:500;color:var(--text)">'+i.nombre+'</span>'+getBadge(i.venc)+'</div>').join('');
+}
+async function sugerirRecetasAll(){
+  const btn=document.getElementById('btnSugerirAll');btn.disabled=true;btn.textContent='Pensando...';
+  const allStock=getAllStocked().filter(i=>i.qty>0);
+  // Use selected or all if none selected
+  const all=selectedIngredients.size>0?allStock.filter(i=>selectedIngredients.has(i.id+'_'+i.loc)):allStock;
+  if(!all.length){toast('Seleccioná al menos un ingrediente');btn.disabled=false;btn.textContent='✨ Sugerir recetas con seleccionados';return;}
+  const lista=all.map(i=>i.nombre+' ('+i.qty+' '+i.unidad+')').join(', ');
+  document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">✨ Analizando todo tu stock...</div>';
+  try{
+    const text=await callGemini('Tengo en heladera, freezer y despensa: '+lista+'.\nSugería 3 recetas variadas. Para cada una: nombre, ingredientes usados, pasos breves, ingrediente opcional.\nSOLO JSON sin backticks:\n[{"nombre":"...","ingredientes_usados":["..."],"pasos":["..."],"opcional":"..."}]');
+    const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('rec2AllResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">🍳 '+r.nombre+'</div><div class="receta-tags">'+(r.ingredientes_usados||[]).map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div>'+(r.opcional?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>':'')+'</div>').join('');
+  }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
+  btn.disabled=false;btn.textContent='✨ Sugerir recetas';
+}
+async function sugerirRecetasVenc(){
+  const btn=document.getElementById('btnSugerirVenc');btn.disabled=true;btn.textContent='Pensando...';
+  const all=getAllStocked().filter(i=>i.venc);
+  const proximos=all.filter(i=>{const dl=daysLeft(i.venc);return dl!==null&&dl<=7&&dl>=0;});
+  if(!proximos.length){toast('No hay productos próximos a vencer');btn.disabled=false;btn.textContent='🔥 Sugerir con los que vencen';return;}
+  const lista=proximos.map(i=>i.nombre+' (vence en '+daysLeft(i.venc)+' días)').join(', ');
+  const resto=getAllStocked().filter(i=>i.qty>0&&!proximos.find(p=>p.id===i.id)).map(i=>i.nombre).join(', ');
+  document.getElementById('rec2VencResults').innerHTML='<div class="receta-loading">🔥 Buscando recetas para usar lo que vence...</div>';
+  try{
+    const prompt='Tengo estos productos que vencen pronto: '+lista+'. También tengo: '+resto+'.\nSugería 3 recetas que usen principalmente los que vencen. Para cada una: nombre, productos por vencer usados, pasos breves, urgencia.\nSOLO JSON sin backticks:\n[{"nombre":"...","usa_por_vencer":["..."],"pasos":["..."],"urgencia":"alta/media"}]';
+    const text=await callGemini(prompt);
+    const recetas=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('rec2VencResults').innerHTML=recetas.map(r=>'<div class="receta-card"><div class="receta-title">'+(r.urgencia==='alta'?'🔴':'🟡')+' '+r.nombre+'</div><div class="receta-tags">'+(r.usa_por_vencer||[]).map(i=>'<span class="receta-tag" style="background:#FCEBEB;color:#791F1F">⏰ '+i+'</span>').join('')+'</div><div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((p,i)=>(i+1)+'. '+p).join('\n')+'</div></div>').join('');
+  }catch(e){document.getElementById('rec2VencResults').innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';}
+  btn.disabled=false;btn.textContent='🔥 Sugerir con los que vencen';
+}
+async function checkReceta2(){
+  const query=document.getElementById('recetaQuery2').value.trim();if(!query)return;
+  const lista=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase()).join(', ');
+  document.getElementById('rec2AllResults').innerHTML='<div class="receta-loading">🔍 Revisando...</div>';
+  try{
+    const text=await callGemini('Quiero hacer: "'+query+'"\nTengo disponible: '+lista+'.\nSOLO JSON sin backticks:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');
+    const r=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);
+    document.getElementById('rec2AllResults').innerHTML='<div class="receta-card"><div class="receta-title">'+(r.se_puede_hacer?'✅':'❌')+' '+r.receta+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:10px">'+r.nota+'</div>'+(r.ingredientes||[]).map(ing=>'<div class="falta-row"><span class="falta-nombre">'+ing.nombre+(ing.esencial?'':' <span style="font-size:11px;color:var(--text3)">(opt)</span>')+'</span><span class="falta-estado '+(ing.tengo?'tengo':'falta')+'">'+(ing.tengo?'✓ Tengo':'✗ Falta')+'</span></div>').join('')+(faltanEsenciales.length?'<button class="btn-secondary" style="margin-top:10px" onclick="agregarFaltantes('+JSON.stringify(faltanEsenciales.map(i=>i.nombre))+')">+ Agregar a compras</button>':'')+'</div>';
+  }catch(e){document.getElementById('rec2AllResults').innerHTML='<div class="empty">Error</div>';}
+}
+
+// STATS GENERALES
+function renderGStats(){
+  const hist=loadHist();
+  const all=getAllStocked();
+  const catalog=loadCatalog();
+  const compras=loadCompras();
+
+  // Totales
+  const totalH=getLocItems('h').length, totalF=getLocItems('f').length, totalD=getLocItems('d').length;
+  const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
+  const proxVenc=all.filter(i=>i.venc&&daysLeft(i.venc)>=0&&daysLeft(i.venc)<=7).length;
+  const bajoStock=all.filter(i=>i.stockMin>0&&i.qty<=i.stockMin).length;
+
+  // Consumo por periodo
+  const now=new Date();
+  const hace7=new Date(now);hace7.setDate(hace7.getDate()-7);
+  const hace30=new Date(now);hace30.setDate(hace30.getDate()-30);
+  const cons7=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace7);
+  const cons30=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace30);
+  const totalCons7=cons7.reduce((s,h)=>s+(h.delta||1),0);
+  const totalCons30=cons30.reduce((s,h)=>s+(h.delta||1),0);
+
+  // Top consumidos 30d
+  const consCnt={};
+  cons30.forEach(h=>{consCnt[h.nombre]=(consCnt[h.nombre]||0)+(h.delta||1);});
+  const topCons=Object.entries(consCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxC=topCons[0]?.[1]||1;
+
+  // Top categorías por stock
+  const catCnt={};all.forEach(i=>{catCnt[i.cat]=(catCnt[i.cat]||0)+i.qty;});
+  const topCat=Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxCat=topCat[0]?.[1]||1;
+
+  // Compras completadas
+  const comprasHechas=hist.filter(h=>h.accion==='comprado'&&new Date(h.ts)>=hace30).length;
+
+  // Consumo por día (últimos 14 días)
+  const dias14=[];
+  for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);dias14.push(d);}
+  const consPorDia=dias14.map(d=>{
+    const key=d.toISOString().split('T')[0];
+    return hist.filter(h=>h.accion==='consumido'&&h.ts.startsWith(key)).reduce((s,h)=>s+(h.delta||1),0);
+  });
+  const maxDia=Math.max(...consPorDia,1);
+
+  document.getElementById('gstatsContent').innerHTML=
+    // Header stats
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'+
+      '<div class="stat h"><div class="stat-val h">'+totalH+'</div><div class="stat-lbl">🧊 Heladera</div></div>'+
+      '<div class="stat f"><div class="stat-val f">'+totalF+'</div><div class="stat-lbl">❄️ Freezer</div></div>'+
+      '<div class="stat d"><div class="stat-val d">'+totalD+'</div><div class="stat-lbl">🫙 Despensa</div></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+      '<div class="stat cat"><div class="stat-val cat">'+catalog.length+'</div><div class="stat-lbl">📋 En catálogo</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(vencidos>0?'color:#A32D2D':'')+'">'+vencidos+'</div><div class="stat-lbl">⚠️ Vencidos</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(proxVenc>0?'color:#BA7517':'')+'">'+proxVenc+'</div><div class="stat-lbl">⏰ Vencen en 7d</div></div>'+
+      '<div class="stat h"><div class="stat-val h" style="'+(bajoStock>0?'color:#72243E':'')+'">'+bajoStock+'</div><div class="stat-lbl">📉 Stock bajo</div></div>'+
+    '</div>'+
+    // Consumo
+    '<div class="card"><div class="section-lbl">Consumo</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'+
+        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons7.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 7 días</div></div>'+
+        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons30.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 30 días</div></div>'+
+      '</div>'+
+      // Mini bar chart last 14 days
+      '<div style="margin-top:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase">Consumo diario (14 días)</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:3px;height:50px">'+
+      consPorDia.map((v,i)=>{
+        const h=maxDia>0?Math.max(4,Math.round(v/maxDia*46)):4;
+        const d=dias14[i];const isToday=d.toDateString()===now.toDateString();
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'+
+          '<div style="width:100%;height:'+h+'px;background:'+(isToday?'#378ADD':v>0?'#1D9E75':'var(--bg4)')+';border-radius:3px 3px 0 0" title="'+v+'"></div>'+
+        '</div>';
+      }).join('')+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--text3)">'+
+        '<span>'+fmtDay(dias14[0].toISOString())+'</span><span>Hoy</span>'+
+      '</div></div>'+
+    '</div>'+
+    // Compras
+    '<div class="card"><div class="section-lbl">Compras (30 días)</div>'+
+      '<div style="font-size:22px;font-weight:700;color:#8A3A8A;margin-top:6px">'+comprasHechas+'</div>'+
+      '<div style="font-size:12px;color:var(--text2)">ítems marcados como comprados</div>'+
+    '</div>'+
+    // Top consumidos
+    (topCons.length?'<div class="card"><div class="section-lbl">Más consumidos (30 días)</div>'+
+      topCons.map(([n,v])=>
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
+        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
+        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#1D9E75;width:'+Math.round(v/maxC*100)+'%"></div></div>'+
+        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
+      ).join('')+'</div>':'')+
+    // Top categorías
+    (topCat.length?'<div class="card"><div class="section-lbl">Stock por categoría</div>'+
+      topCat.map(([n,v])=>
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
+        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
+        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#378ADD;width:'+Math.round(v/maxCat*100)+'%"></div></div>'+
+        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
+      ).join('')+'</div>':'');
+}
+
+// HISTORIAL
+function renderHist(){
+  const FILTERS=['todos','agregado','consumido','comprado','eliminado'];
+  const LABELS={todos:'Todos',agregado:'Agregados',consumido:'Consumidos',comprado:'Comprados',eliminado:'Eliminados'};
+  document.getElementById('histFilter').innerHTML=FILTERS.map(f=>'<button class="cat-pill'+(f===histFilter?' active h':'')+'" onclick="setHistFilter(\''+f+'\')">'+LABELS[f]+'</button>').join('');
+  let hist=loadHist();if(histFilter!=='todos')hist=hist.filter(h=>h.accion===histFilter);
+  const el=document.getElementById('histList');
+  if(!hist.length){el.innerHTML='<div class="empty">Sin historial aún</div>';return;}
+  el.innerHTML=hist.slice(0,80).map(h=>{
+  const labels={consumido:'Consumido',agregado:'Agregado',comprado:'Comprado',eliminado:'Eliminado',movido:'Movido'};
+  const cantStr=(h.delta&&h.delta>0)?' · '+h.delta+' '+(h.unidad||'unid'):'';
+  return '<div class="hist-item"><div class="hist-icon" style="background:'+(COLORS[h.cat]||'#F1EFE8')+'">'+(ALL_CATS[h.cat]||'📦')+'</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+h.nombre+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+fmtDay(h.ts)+cantStr+' · por <span style="color:'+(h.byColor||'#666')+'">'+h.by+'</span></div></div><span class="hist-action '+h.accion+'">'+(labels[h.accion]||h.accion)+'</span></div>';
+}).join('');
+}
+function setHistFilter(f){histFilter=f;renderHist();}
+
+function onFabClick(){
+  if(loc==='cat')openAddModal();
+  else if(loc==='comp')addCompra();
+  else if(loc==='chat')document.getElementById('chatInput').focus();
+  else openAddModal();
+}
+
+// NOTIF
+const NOTIF_OK=typeof Notification!=='undefined';
+function renderNotifBanner(){const el=document.getElementById('notifBanner');if(!NOTIF_OK||Notification.permission==='granted'){el.innerHTML='';return;}el.innerHTML='<div class="notif-banner">🔔 <span>Activá notificaciones</span><button onclick="requestNotif()">Activar</button></div>';}
+async function requestNotif(){if(!NOTIF_OK)return;const p=await Notification.requestPermission();if(p==='granted'){toast('Notificaciones activadas!');renderNotifBanner();}}
+
+function openSettings(){
+  document.getElementById('cfgGemini').value=getKey('gemini_key');
+  document.getElementById('cfgJsonbinKey').value=getKey('jsonbin_key');
+  document.getElementById('cfgJsonbinBin').value=getKey('jsonbin_bin');
+  document.getElementById('cfgStatus').style.display='none';
+  document.getElementById('settingsModalBg').classList.add('open');
+}
+function closeSettings(){document.getElementById('settingsModalBg').classList.remove('open');}
+function toggleShowKey(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
+function saveSettings(){
+  const g=document.getElementById('cfgGemini').value.trim();
+  const jk=document.getElementById('cfgJsonbinKey').value.trim();
+  const jb=document.getElementById('cfgJsonbinBin').value.trim();
+  if(!g||!jk||!jb){showCfgStatus('Completá todos los campos','#FCEBEB','#791F1F');return;}
+  localStorage.setItem('cfg_gemini_key',g);
+  localStorage.setItem('cfg_jsonbin_key',jk);
+  localStorage.setItem('cfg_jsonbin_bin',jb);
+  localStorage.setItem('jsonbin_bin_id',jb);
+  showCfgStatus('✅ Guardado correctamente','#EAF3DE','#27500A');
+  setTimeout(()=>{closeSettings();location.reload();},1000);
+}
+async function testConnection(){
+  const btn=document.getElementById('btnTestConn');btn.textContent='Probando...';btn.disabled=true;
+  const jk=document.getElementById('cfgJsonbinKey').value.trim();
+  const jb=document.getElementById('cfgJsonbinBin').value.trim();
+  const g=document.getElementById('cfgGemini').value.trim();
+  let msg='';let ok=true;
+  // Test JSONBin
+  try{
+    const r=await fetch('https://api.jsonbin.io/v3/b/'+jb+'/latest',{headers:{'X-Master-Key':jk}});
+    const d=await r.json();
+    if(d.record)msg+='✅ JSONBin OK  ';
+    else{msg+='❌ JSONBin: '+( d.message||'error')+'  ';ok=false;}
+  }catch(e){msg+='❌ JSONBin: sin conexión  ';ok=false;}
+  // Test Gemini
+  try{
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+g,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'di "ok"'}]}]})});
+    const d=await r.json();
+    if(d.candidates)msg+='✅ Gemini OK';
+    else{msg+='❌ Gemini: '+(d.error?.message||'error');ok=false;}
+  }catch(e){msg+='❌ Gemini: sin conexión';ok=false;}
+  showCfgStatus(msg,ok?'#EAF3DE':'#FCEBEB',ok?'#27500A':'#791F1F');
+  btn.textContent='🔌 Probar conexión';btn.disabled=false;
+}
+function showCfgStatus(msg,bg,color){
+  const el=document.getElementById('cfgStatus');
+  el.style.display='block';el.style.background=bg;el.style.color=color;el.textContent=msg;
+}
+function openImgViewer(src){const bg=document.getElementById("imgViewerBg");document.getElementById("imgViewerImg").src=src;bg.style.display="flex";}
+function closeImgViewer(){document.getElementById("imgViewerBg").style.display="none";}
+function toast(msg){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='toast';el.textContent=msg;wrap.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},2200);}
+
+// Clean up bad stockMin data on load (stockMin set on locations with qty=0)
+function cleanStockData(){
+  const stock=loadStock();let changed=false;
+  Object.keys(stock).forEach(catId=>{
+    ['h','f','d'].forEach(l=>{
+      const s=stock[catId]?.[l];
+      if(s&&s.qty===0&&s.stockMin>0){s.stockMin=0;changed=true;}
+    });
+  });
+  if(changed){localStorage.setItem('stock2',JSON.stringify(stock));console.log('Stock data cleaned');}
+}
+cleanStockData();
+
+// INIT
+// Check if keys are configured
+if(!getKey('gemini_key')||!getKey('jsonbin_key')||!getKey('jsonbin_bin')){
+  setTimeout(()=>openSettings(),500);
+}
+const profile=getProfile();
+if(!profile){
+  selectedProfileColor=PROFILE_COLORS[0];
+  initProfileColors('profileColors',PROFILE_COLORS[0]);
+  document.getElementById('profileModalBg').classList.add('open');
+} else {
+  updateAvatar();
+}
+setLoc('h');
+renderNotifBanner();
+window.addEventListener('load',()=>{setTimeout(pullFromCloud,800);});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+// Poll for chat updates every 30s
+setInterval(()=>{if(loc==='chat')pullFromCloud();else updateChatBadge();},30000);
+</script>
+</body>
+</html>
