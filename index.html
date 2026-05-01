@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.3.3</div>
+  <div class="ver">v8.4.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -558,10 +558,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal-header"><div class="modal-title">⚙️ Configuración</div></div>
   <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Las keys se guardan solo en tu dispositivo, nunca en el servidor.</p>
   <div class="field">
-    <label>Gemini API Key <span style="font-size:11px;color:var(--text3)">(aistudio.google.com)</span></label>
+    <label>Groq API Key <span style="font-size:11px;color:var(--text3)">(console.groq.com → gratis)</span></label>
     <div style="display:flex;gap:8px">
-      <input id="cfgGemini" type="password" placeholder="AIza..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
-      <button onclick="toggleShowKey('cfgGemini')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
+      <input id="cfgGroq" type="password" placeholder="gsk_..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <button onclick="toggleShowKey('cfgGroq')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
     </div>
   </div>
   <div class="field">
@@ -590,7 +590,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 // Keys stored in localStorage — never hardcoded
 function getKey(k){return localStorage.getItem('cfg_'+k)||'';}
-const GEMINI_KEY=getKey('gemini_key');
+const GEMINI_KEY=getKey('groq_key');
 const JSONBIN_KEY=getKey('jsonbin_key');
 const JSONBIN_BIN=getKey('jsonbin_bin');
 
@@ -833,28 +833,35 @@ function addToComprasFromAlert(catId,l){
 }
 
 // Gemini
-async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg',retries=3){
-  const parts=[];
-  if(imageBase64)parts.push({inlineData:{mimeType,data:imageBase64}});
-  parts.push({text:prompt});
+async function callGroq(prompt,retries=2){
   for(let i=0;i<retries;i++){
     try{
-      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+getKey('gemini_key'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1}})});
+      const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+getKey('groq_key')},
+        body:JSON.stringify({
+          model:'llama-3.3-70b-versatile',
+          messages:[{role:'user',content:prompt}],
+          temperature:0.1,
+          max_tokens:1000
+        })
+      });
       const data=await resp.json();
       if(data.error){
-        // If overloaded, wait and retry
-        if(data.error.message&&data.error.message.includes('high demand')&&i<retries-1){
-          await new Promise(r=>setTimeout(r,2000*(i+1)));
-          continue;
-        }
+        if(i<retries-1){await new Promise(r=>setTimeout(r,1500*(i+1)));continue;}
         throw new Error(data.error.message);
       }
-      return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+      return data.choices?.[0]?.message?.content||'';
     }catch(e){
       if(i===retries-1)throw e;
-      await new Promise(r=>setTimeout(r,2000*(i+1)));
+      await new Promise(r=>setTimeout(r,1500*(i+1)));
     }
   }
+}
+// Keep callGemini as alias for compatibility (without image support)
+async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg'){
+  // Image analysis not available with Groq - skip image, use text only
+  return callGroq(prompt);
 }
 
 function getLocItems(l){
@@ -1130,19 +1137,36 @@ let isAbierto=false,abiertoDateSuggested=null;
 function toggleAbierto(){
   isAbierto=!isAbierto;
   const c=document.getElementById('abiertoCheck');
-  c.style.background=isAbierto?'#E8A020':'transparent';c.style.borderColor=isAbierto?'#E8A020':'var(--border2)';c.textContent=isAbierto?'✓':'';
-  if(isAbierto)calcAbiertoDate();else document.getElementById('abiertoDateSuggest').style.display='none';
+  c.style.background=isAbierto?'#E8A020':'transparent';
+  c.style.borderColor=isAbierto?'#E8A020':'var(--border2)';
+  c.textContent=isAbierto?'✓':'';
+  if(isAbierto){
+    calcAbiertoDate();
+  } else {
+    document.getElementById('abiertoDateSuggest').style.display='none';
+    // Restore original venc if was changed
+    const stock=loadStock();
+    const activeStock=['h','f','d'].map(l=>stock[assigningCatId]?.[l]).find(s=>s&&s.qty>0)||{};
+    document.getElementById('assignVenc').value=activeStock.venc||'';
+  }
 }
 async function calcAbiertoDate(){
   const cat=loadCatalog().find(p=>p.id===assigningCatId);if(!cat)return;
   const sug=document.getElementById('abiertoDateSuggest');const dt=document.getElementById('abiertoDateText');
-  sug.style.display='block';dt.textContent='calculando...';
+  sug.style.display='block';dt.textContent='⏳ Calculando con IA...';
   try{
-    const l=assignQtys.f>0?'freezer':assignQtys.h>0?'heladera':'despensa';
-    const text=await callGemini('El producto "'+cat.nombre+'" categoría "'+cat.cat+'" fue abierto y está en '+l+'. ¿Cuántos días dura una vez abierto? Respondé SOLO con un número entero.');
+    const l=assignQtys.h>0?'heladera':assignQtys.f>0?'freezer':'despensa';
+    const text=await callGemini('El producto "'+cat.nombre+'" categoría "'+cat.cat+'" fue abierto y está guardado en '+l+'. ¿Cuántos días dura aproximadamente una vez abierto? Respondé SOLO con un número entero, sin texto extra.');
     const dias=parseInt(text.trim().replace(/\D/g,''));
-    if(dias>0){abiertoDateSuggested=addDays(dias);dt.textContent='~'+dias+' días ('+new Date(abiertoDateSuggested+'T00:00:00').toLocaleDateString('es-AR')+')';}
-    else dt.textContent='No se pudo calcular';
+    if(dias>0){
+      abiertoDateSuggested=addDays(dias);
+      dt.textContent='~'+dias+' días → '+new Date(abiertoDateSuggested+'T00:00:00').toLocaleDateString('es-AR');
+      // Auto-apply the date immediately
+      document.getElementById('assignVenc').value=abiertoDateSuggested;
+      toast('Fecha actualizada por paquete abierto');
+    } else {
+      dt.textContent='No se pudo calcular — ingresá la fecha manualmente';
+    }
   }catch(e){dt.textContent='Error al consultar IA';}
 }
 function applyAbiertoDate(){if(abiertoDateSuggested){document.getElementById('assignVenc').value=abiertoDateSuggested;toast('Fecha aplicada');}}
@@ -1240,11 +1264,9 @@ async function scanBarcodeFromPhoto(input){
       const codes=await detector.detect(img);
       if(codes.length>0){res.textContent='Código: '+codes[0].rawValue;await lookupBarcode(codes[0].rawValue);return;}
     }
-    const reader=new FileReader();
-    reader.onload=async(e)=>{
-      const base64=e.target.result.split(',')[1];
-      try{const text=await callGemini('Leé el código de barras. Respondé SOLO el número.',base64,file.type||'image/jpeg');const code=text.trim().replace(/\D/g,'');if(code&&code.length>4){res.textContent='Código: '+code;await lookupBarcode(code);}else{res.textContent='No detectado.';document.getElementById('manualBarcodeWrap').style.display='block';}}catch(e){res.textContent='Error.';document.getElementById('manualBarcodeWrap').style.display='block';}
-    };reader.readAsDataURL(file);
+    // Groq doesn't support image analysis - show manual input
+    res.textContent='Ingresá el código manualmente:';
+    document.getElementById('manualBarcodeWrap').style.display='block';
   }catch(e){res.textContent='Error.';document.getElementById('manualBarcodeWrap').style.display='block';}
 }
 function lookupManualBarcode(){const code=document.getElementById('manualBarcode').value.trim();if(!code){toast('Ingresá un código');return;}document.getElementById('barcodeResult').style.display='block';document.getElementById('barcodeResult').textContent='Código: '+code;lookupBarcode(code);}
@@ -1269,9 +1291,10 @@ async function handlePhoto(input){
   const reader=new FileReader();
   reader.onload=async(e)=>{
     preview.src=e.target.result;preview.style.display='block';
-    const base64=e.target.result.split(',')[1];const catList=Object.keys(ALL_CATS).join(', ');
-    try{const text=await callGemini('Analizá este producto. SOLO JSON sin backticks:\n{"nombre":"...","categoria":"una de: '+catList+'"}',base64,file.type||'image/jpeg');const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());if(parsed.nombre)document.getElementById('fNombre').value=parsed.nombre;if(parsed.categoria)document.getElementById('fCat').value=parsed.categoria;st.className='ai-status';}
-    catch(err){st.textContent='Error.';st.className='ai-status visible';}
+    // Groq doesn't support image analysis - show message
+    st.textContent='Foto guardada. Completá el nombre y categoría manualmente.';
+    st.className='ai-status visible';
+    setTimeout(()=>st.className='ai-status',3000);
   };reader.readAsDataURL(file);
 }
 
@@ -1625,7 +1648,7 @@ function renderNotifBanner(){const el=document.getElementById('notifBanner');if(
 async function requestNotif(){if(!NOTIF_OK)return;const p=await Notification.requestPermission();if(p==='granted'){toast('Notificaciones activadas!');renderNotifBanner();}}
 
 function openSettings(){
-  document.getElementById('cfgGemini').value=getKey('gemini_key');
+  document.getElementById('cfgGroq').value=getKey('groq_key');
   document.getElementById('cfgJsonbinKey').value=getKey('jsonbin_key');
   document.getElementById('cfgJsonbinBin').value=getKey('jsonbin_bin');
   document.getElementById('cfgStatus').style.display='none';
@@ -1634,11 +1657,11 @@ function openSettings(){
 function closeSettings(){document.getElementById('settingsModalBg').classList.remove('open');}
 function toggleShowKey(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function saveSettings(){
-  const g=document.getElementById('cfgGemini').value.trim();
+  const g=document.getElementById('cfgGroq').value.trim();
   const jk=document.getElementById('cfgJsonbinKey').value.trim();
   const jb=document.getElementById('cfgJsonbinBin').value.trim();
   if(!g||!jk||!jb){showCfgStatus('Completá todos los campos','#FCEBEB','#791F1F');return;}
-  localStorage.setItem('cfg_gemini_key',g);
+  localStorage.setItem('cfg_groq_key',g);
   localStorage.setItem('cfg_jsonbin_key',jk);
   localStorage.setItem('cfg_jsonbin_bin',jb);
   localStorage.setItem('jsonbin_bin_id',jb);
@@ -1658,13 +1681,13 @@ async function testConnection(){
     if(d.record)msg+='✅ JSONBin OK  ';
     else{msg+='❌ JSONBin: '+( d.message||'error')+'  ';ok=false;}
   }catch(e){msg+='❌ JSONBin: sin conexión  ';ok=false;}
-  // Test Gemini
+  // Test Groq
   try{
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+g,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'di "ok"'}]}]})});
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+g},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'di ok'}],max_tokens:5})});
     const d=await r.json();
-    if(d.candidates)msg+='✅ Gemini OK';
-    else{msg+='❌ Gemini: '+(d.error?.message||'error');ok=false;}
-  }catch(e){msg+='❌ Gemini: sin conexión';ok=false;}
+    if(d.choices)msg+='✅ Groq OK';
+    else{msg+='❌ Groq: '+(d.error?.message||'error');ok=false;}
+  }catch(e){msg+='❌ Groq: sin conexión';ok=false;}
   showCfgStatus(msg,ok?'#EAF3DE':'#FCEBEB',ok?'#27500A':'#791F1F');
   btn.textContent='🔌 Probar conexión';btn.disabled=false;
 }
@@ -1691,7 +1714,7 @@ cleanStockData();
 
 // INIT
 // Check if keys are configured
-if(!getKey('gemini_key')||!getKey('jsonbin_key')||!getKey('jsonbin_bin')){
+if(!getKey('groq_key')||!getKey('jsonbin_key')||!getKey('jsonbin_bin')){
   setTimeout(()=>openSettings(),500);
 }
 const profile=getProfile();
