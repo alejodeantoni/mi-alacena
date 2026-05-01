@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.4.0</div>
+  <div class="ver">v8.4.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -558,10 +558,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal-header"><div class="modal-title">⚙️ Configuración</div></div>
   <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Las keys se guardan solo en tu dispositivo, nunca en el servidor.</p>
   <div class="field">
-    <label>Groq API Key <span style="font-size:11px;color:var(--text3)">(console.groq.com → gratis)</span></label>
+    <label>Groq API Key <span style="font-size:11px;color:var(--text3)">(console.groq.com → gratis · para recetas y texto)</span></label>
     <div style="display:flex;gap:8px">
       <input id="cfgGroq" type="password" placeholder="gsk_..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
       <button onclick="toggleShowKey('cfgGroq')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>Gemini API Key <span style="font-size:11px;color:var(--text3)">(aistudio.google.com · para fotos y códigos)</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="cfgGemini" type="password" placeholder="AIza..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <button onclick="toggleShowKey('cfgGemini')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-size:14px">👁</button>
     </div>
   </div>
   <div class="field">
@@ -858,9 +865,29 @@ async function callGroq(prompt,retries=2){
     }
   }
 }
-// Keep callGemini as alias for compatibility (without image support)
+// Gemini Vision - only for image analysis
+async function callGeminiVision(prompt,imageBase64,mimeType='image/jpeg'){
+  const key=getKey('gemini_key');
+  if(!key)throw new Error('Configurá tu Gemini API Key en ⚙️');
+  const parts=[{inlineData:{mimeType,data:imageBase64}},{text:prompt}];
+  for(let i=0;i<2;i++){
+    try{
+      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1}})
+      });
+      const data=await resp.json();
+      if(data.error){
+        if(i<1){await new Promise(r=>setTimeout(r,2000));continue;}
+        throw new Error(data.error.message);
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    }catch(e){if(i===1)throw e;await new Promise(r=>setTimeout(r,2000));}
+  }
+}
+// callGemini for text = use Groq
 async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg'){
-  // Image analysis not available with Groq - skip image, use text only
+  if(imageBase64)return callGeminiVision(prompt,imageBase64,mimeType);
   return callGroq(prompt);
 }
 
@@ -1264,9 +1291,19 @@ async function scanBarcodeFromPhoto(input){
       const codes=await detector.detect(img);
       if(codes.length>0){res.textContent='Código: '+codes[0].rawValue;await lookupBarcode(codes[0].rawValue);return;}
     }
-    // Groq doesn't support image analysis - show manual input
-    res.textContent='Ingresá el código manualmente:';
-    document.getElementById('manualBarcodeWrap').style.display='block';
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      const base64=e.target.result.split(',')[1];
+      try{
+        const text=await callGeminiVision('Leé el código de barras de esta imagen. Respondé SOLO el número, sin texto extra. Si no hay código respondé "none".',base64,file.type||'image/jpeg');
+        const code=text.trim().replace(/\D/g,'');
+        if(code&&code.length>4){res.textContent='Código: '+code;await lookupBarcode(code);}
+        else{res.textContent='No detectado. Ingresá manualmente:';document.getElementById('manualBarcodeWrap').style.display='block';}
+      }catch(e){
+        res.textContent=e.message.includes('Configurá')?e.message:'No detectado.';
+        document.getElementById('manualBarcodeWrap').style.display='block';
+      }
+    };reader.readAsDataURL(file);
   }catch(e){res.textContent='Error.';document.getElementById('manualBarcodeWrap').style.display='block';}
 }
 function lookupManualBarcode(){const code=document.getElementById('manualBarcode').value.trim();if(!code){toast('Ingresá un código');return;}document.getElementById('barcodeResult').style.display='block';document.getElementById('barcodeResult').textContent='Código: '+code;lookupBarcode(code);}
@@ -1291,10 +1328,17 @@ async function handlePhoto(input){
   const reader=new FileReader();
   reader.onload=async(e)=>{
     preview.src=e.target.result;preview.style.display='block';
-    // Groq doesn't support image analysis - show message
-    st.textContent='Foto guardada. Completá el nombre y categoría manualmente.';
-    st.className='ai-status visible';
-    setTimeout(()=>st.className='ai-status',3000);
+    const base64=e.target.result.split(',')[1];const catList=Object.keys(ALL_CATS).join(', ');
+    try{
+      const text=await callGeminiVision('Analizá este producto alimenticio. SOLO JSON sin backticks:\n{"nombre":"nombre completo","categoria":"una de: '+catList+'"}',base64,file.type||'image/jpeg');
+      const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+      if(parsed.nombre)document.getElementById('fNombre').value=parsed.nombre;
+      if(parsed.categoria)document.getElementById('fCat').value=parsed.categoria;
+      st.className='ai-status';
+    }catch(err){
+      st.textContent=err.message.includes('Configurá')?err.message:'Error al analizar. Completá manualmente.';
+      st.className='ai-status visible';
+    }
   };reader.readAsDataURL(file);
 }
 
@@ -1649,6 +1693,7 @@ async function requestNotif(){if(!NOTIF_OK)return;const p=await Notification.req
 
 function openSettings(){
   document.getElementById('cfgGroq').value=getKey('groq_key');
+  document.getElementById('cfgGemini').value=getKey('gemini_key');
   document.getElementById('cfgJsonbinKey').value=getKey('jsonbin_key');
   document.getElementById('cfgJsonbinBin').value=getKey('jsonbin_bin');
   document.getElementById('cfgStatus').style.display='none';
@@ -1658,10 +1703,12 @@ function closeSettings(){document.getElementById('settingsModalBg').classList.re
 function toggleShowKey(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function saveSettings(){
   const g=document.getElementById('cfgGroq').value.trim();
+  const gem=document.getElementById('cfgGemini').value.trim();
   const jk=document.getElementById('cfgJsonbinKey').value.trim();
   const jb=document.getElementById('cfgJsonbinBin').value.trim();
-  if(!g||!jk||!jb){showCfgStatus('Completá todos los campos','#FCEBEB','#791F1F');return;}
+  if(!g||!jk||!jb){showCfgStatus('Groq Key, JSONBin Key y Bin ID son obligatorios','#FCEBEB','#791F1F');return;}
   localStorage.setItem('cfg_groq_key',g);
+  if(gem)localStorage.setItem('cfg_gemini_key',gem);
   localStorage.setItem('cfg_jsonbin_key',jk);
   localStorage.setItem('cfg_jsonbin_bin',jb);
   localStorage.setItem('jsonbin_bin_id',jb);
@@ -1685,9 +1732,21 @@ async function testConnection(){
   try{
     const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+g},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'di ok'}],max_tokens:5})});
     const d=await r.json();
-    if(d.choices)msg+='✅ Groq OK';
-    else{msg+='❌ Groq: '+(d.error?.message||'error');ok=false;}
-  }catch(e){msg+='❌ Groq: sin conexión';ok=false;}
+    if(d.choices)msg+='✅ Groq OK  ';
+    else{msg+='❌ Groq: '+(d.error?.message||'error')+'  ';ok=false;}
+  }catch(e){msg+='❌ Groq: sin conexión  ';ok=false;}
+  // Test Gemini (optional)
+  const gem2=document.getElementById('cfgGemini').value.trim();
+  if(gem2){
+    try{
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+gem2,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'ok'}]}]})});
+      const d=await r.json();
+      if(d.candidates)msg+='✅ Gemini OK';
+      else msg+='❌ Gemini: '+(d.error?.message||'error');
+    }catch(e){msg+='❌ Gemini: sin conexión';}
+  } else {
+    msg+='⚠️ Gemini no configurado (opcional para fotos)';
+  }
   showCfgStatus(msg,ok?'#EAF3DE':'#FCEBEB',ok?'#27500A':'#791F1F');
   btn.textContent='🔌 Probar conexión';btn.disabled=false;
 }
