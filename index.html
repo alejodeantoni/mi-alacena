@@ -227,7 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.3.1</div>
+  <div class="ver">v8.3.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -503,7 +503,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal-drag"></div>
   <div class="modal-header"><div class="modal-title" id="assignTitle">Asignar producto</div></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px;background:var(--bg3);border-radius:10px">
-    <div id="assignIcon" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden"></div>
+    <div style="position:relative">
+      <div id="assignIcon" style="width:52px;height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden"></div>
+      <label style="position:absolute;bottom:-4px;right:-4px;width:20px;height:20px;background:#378ADD;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px">
+        📷<input type="file" accept="image/*" capture="environment" onchange="handleAssignPhoto(this)" style="display:none">
+      </label>
+    </div>
     <div><div id="assignName" style="font-size:14px;font-weight:600;color:var(--text)"></div><div id="assignSub" style="font-size:12px;color:var(--text2)"></div></div>
   </div>
   <div class="ai-date-suggest" id="aiDateSuggest">
@@ -854,7 +859,7 @@ async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg',retries=
 
 function getLocItems(l){
   const cat=loadCatalog();const stock=loadStock();
-  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l};}).filter(Boolean);
+  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null};}).filter(Boolean);
 }
 function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
@@ -1044,6 +1049,8 @@ function openAssignModal(catId){
   const maxStockMin=Math.max(...allLocs.map(s=>s.stockMin||0));
   document.getElementById('assignVenc').value=activeStock.venc||'';
   document.getElementById('assignMin').value=maxStockMin||0;
+  // Restore abierto state
+  const wasAbierto=activeStock.abierto||false;
   aiSuggestedDate=null;
   const aiEl=document.getElementById('aiDateSuggest');
   if(FRESH_CATS.includes(cat.cat)&&DURACION[cat.cat]){
@@ -1055,8 +1062,13 @@ function openAssignModal(catId){
     document.getElementById('aiDateText').textContent=txt;
     aiEl.style.display='block';
   } else {aiEl.style.display='none';}
-  isAbierto=false;abiertoDateSuggested=null;
-  const ac=document.getElementById('abiertoCheck');if(ac){ac.style.background='transparent';ac.style.borderColor='var(--border2)';ac.textContent='';}
+  isAbierto=wasAbierto;abiertoDateSuggested=null;
+  const ac=document.getElementById('abiertoCheck');
+  if(ac){
+    ac.style.background=wasAbierto?'#E8A020':'transparent';
+    ac.style.borderColor=wasAbierto?'#E8A020':'var(--border2)';
+    ac.textContent=wasAbierto?'✓':'';
+  }
   const ads=document.getElementById('abiertoDateSuggest');if(ads)ads.style.display='none';
   document.getElementById('assignModalBg').classList.add('open');
 }
@@ -1086,7 +1098,7 @@ function saveAssignment(){
   const p=getProfile();
   // Save stock — only apply stockMin to locations with qty > 0
   ['h','f','d'].forEach(l=>{
-    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null};
+    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto};
   });
   // Save first, then remove any existing auto compra ref for this item (stale)
   localStorage.setItem('stock2',JSON.stringify(stock));
@@ -1097,6 +1109,21 @@ function saveAssignment(){
   scheduleSync();
   addHistEntry(assigningCatId,'agregado',0);
   closeAssignModal();renderAll();renderCatalog();renderCompras();toast('Guardado!');
+}
+function handleAssignPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const cat=loadCatalog();const idx=cat.findIndex(p=>p.id===assigningCatId);
+    if(idx<0)return;
+    cat[idx].img=e.target.result;
+    saveCatalog(cat);
+    // Update icon in modal
+    const icon=document.getElementById('assignIcon');
+    icon.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+    toast('Foto actualizada');
+  };
+  reader.readAsDataURL(file);
 }
 let isAbierto=false,abiertoDateSuggested=null;
 function toggleAbierto(){
