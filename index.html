@@ -74,6 +74,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .qty-ctrl{display:flex;align-items:center;gap:4px}
 .qty-btn{width:28px;height:28px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;line-height:1}
 .qty-num{font-size:14px;font-weight:700;min-width:22px;text-align:center}
+.qty-input{font-size:14px;font-weight:700;width:52px;text-align:center;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);padding:4px 2px;outline:none;-moz-appearance:textfield}
+.qty-input::-webkit-outer-spin-button,.qty-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .icon-btn{width:30px;height:30px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;border-radius:8px}
 .icon-btn:hover,.icon-btn:active{background:var(--bg4)}
 .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:100px;font-weight:500}
@@ -227,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.4.1</div>
+  <div class="ver">v8.4.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -516,9 +518,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <br><button onclick="applyAiDate()">Usar esta fecha</button>
   </div>
   <div id="assignLocRows">
-    <div class="loc-assign-row"><div class="loc-assign-icon">🧊</div><div class="loc-assign-name">Heladera</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('h',-1)">−</button><span class="qty-num" id="aqh">0</span><button class="qty-btn" onclick="changeAssignQty('h',1)">+</button></div></div>
-    <div class="loc-assign-row"><div class="loc-assign-icon">❄️</div><div class="loc-assign-name">Freezer</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('f',-1)">−</button><span class="qty-num" id="aqf">0</span><button class="qty-btn" onclick="changeAssignQty('f',1)">+</button></div></div>
-    <div class="loc-assign-row"><div class="loc-assign-icon">🫙</div><div class="loc-assign-name">Despensa</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('d',-1)">−</button><span class="qty-num" id="aqd">0</span><button class="qty-btn" onclick="changeAssignQty('d',1)">+</button></div></div>
+    <div class="loc-assign-row"><div class="loc-assign-icon">🧊</div><div class="loc-assign-name">Heladera</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('h',-1)">−</button><input class="qty-input" id="aqh" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('h',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('h',1)">+</button></div></div>
+    <div class="loc-assign-row"><div class="loc-assign-icon">❄️</div><div class="loc-assign-name">Freezer</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('f',-1)">−</button><input class="qty-input" id="aqf" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('f',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('f',1)">+</button></div></div>
+    <div class="loc-assign-row"><div class="loc-assign-icon">🫙</div><div class="loc-assign-name">Despensa</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('d',-1)">−</button><input class="qty-input" id="aqd" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('d',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('d',1)">+</button></div></div>
   </div>
   <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
@@ -1013,6 +1015,18 @@ function initSwipe(uid,catId,l){
   card.addEventListener('touchend',()=>{drag=false;if(cx<-65){card.style.transition='transform .2s';card.style.transform='translateX(-100%)';setTimeout(()=>removeFromLoc(catId,l),200);}else{card.style.transition='transform .2s';card.style.transform='translateX(0)';}cx=0;});
 }
 
+function setQty(catId,l,val){
+  const stock=loadStock();
+  if(!stock[catId])stock[catId]={};
+  if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
+  const newQty=Math.max(0,parseFloat(parseFloat(val||0).toFixed(1)));
+  const prev=stock[catId][l].qty;
+  stock[catId][l].qty=newQty;
+  const p=getProfile();stock[catId][l].lastBy=p?.name||null;
+  saveStock(stock);
+  if(newQty<prev)addHistEntry(catId,'consumido',parseFloat((prev-newQty).toFixed(1)));
+  checkLowStock(catId);renderAll();
+}
 function getItemStep(catId){
   const cat=loadCatalog().find(p=>p.id===catId);
   const u=cat?.unidad||'unid';
@@ -1076,7 +1090,7 @@ function openAssignModal(catId){
   document.getElementById('assignSub').textContent=cat.cat+' · '+cat.unidad;
   const iconEl=document.getElementById('assignIcon');iconEl.style.background=COLORS[cat.cat]||'#F1EFE8';
   iconEl.innerHTML=cat.img?'<img src="'+cat.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">':(ALL_CATS[cat.cat]||'📦');
-  document.getElementById('aqh').textContent=assignQtys.h;document.getElementById('aqf').textContent=assignQtys.f;document.getElementById('aqd').textContent=assignQtys.d;
+  document.getElementById('aqh').value=assignQtys.h;document.getElementById('aqf').value=assignQtys.f;document.getElementById('aqd').value=assignQtys.d;
   // Read venc and stockMin from whichever location has qty > 0, fallback to max stockMin
   const allLocs=['h','f','d'].map(l=>stock[catId]?.[l]||{});
   const activeStock=allLocs.find(s=>s.qty>0)||allLocs[0]||{};
@@ -1121,10 +1135,14 @@ function getQtyStep(){
   const sub=document.getElementById('assignSub')?.textContent||'';
   return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.1:1;
 }
+function setAssignQty(l,val){
+  assignQtys[l]=Math.max(0,parseFloat(parseFloat(val||0).toFixed(1)));
+  document.getElementById('aq'+l).value=assignQtys[l];
+}
 function changeAssignQty(l,delta){
   const step=getQtyStep();
   assignQtys[l]=Math.max(0,parseFloat((assignQtys[l]+delta*step).toFixed(1)));
-  document.getElementById('aq'+l).textContent=assignQtys[l];
+  document.getElementById('aq'+l).value=assignQtys[l];
 }
 function saveAssignment(){
   const stock=loadStock();if(!stock[assigningCatId])stock[assigningCatId]={};
