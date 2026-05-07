@@ -232,7 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.0</div>
+  <div class="ver">v8.5.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2134,18 +2134,28 @@ function confirmarCocinado(){
 
 // Add cook button to recipe cards
 function recetaCardHTML(r){
-  const ings=JSON.stringify((r.ingredientes_usados||r.usa_por_vencer||[]).map(n=>({nombre:n})));
-  return '<div class="receta-card">'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
-      '<div class="receta-title" style="flex:1">🍳 '+r.nombre+'</div>'+
-      '<button onclick='abrirModoCocinando("'+r.nombre.replace(/"/g,"'")+'",'+(ings || '[]')+')' style="padding:5px 10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer">👨‍🍳 Cocinar</button>'+
-    '</div>'+
-    '<div class="receta-tags">'+(r.ingredientes_usados||r.usa_por_vencer||[]).map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div>'+
-    '<div class="receta-body" style="margin-top:10px">'+(r.pasos||[]).map((paso,i)=>(i+1)+'. '+paso).join('
-')+'</div>'+
-    (r.opcional?'<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>':'')+
-  '</div>';
+  const nombre=r.nombre||'';
+  const tags=(r.ingredientes_usados||r.usa_por_vencer||[]);
+  const pasos=(r.pasos||[]);
+  const rid='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  window._recetas=window._recetas||{};
+  window._recetas[rid]={nombre,ingredientes:tags.map(n=>({nombre:n}))};
+  let html2='<div class="receta-card">';
+  html2+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+  html2+='<div class="receta-title" style="flex:1">🍳 '+nombre+'</div>';
+  html2+='<button onclick="abrirModoCocinandoById(''+rid+'')" style="padding:5px 10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer">👨‍🍳 Cocinar</button>';
+  html2+='</div>';
+  html2+='<div class="receta-tags">'+tags.map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div>';
+  html2+='<div class="receta-body" style="margin-top:10px">'+pasos.map((paso,i)=>(i+1)+'. '+paso).join('\n')+'</div>';
+  if(r.opcional)html2+='<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>';
+  html2+='</div>';
+  return html2;
 }
+function abrirModoCocinandoById(rid){
+  const r=window._recetas&&window._recetas[rid];
+  if(r)abrirModoCocinando(r.nombre,r.ingredientes);
+}
+
 
 // ============================================================
 // NOTIFICACIONES PUSH REALES
