@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Mi Alacena">
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.groq.com https://api.jsonbin.io https://generativelanguage.googleapis.com https://world.openfoodfacts.org; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:;">
 <title>Mi Alacena</title>
 <style>
 :root{--bg:#f5f5f0;--bg3:#f8f8f4;--bg4:#f0f0e8;--border:#e0e0d8;--border2:#d0d0c8;--text:#1a1a18;--text2:#666;--text3:#aaa;--card:#fff;--modal:#fff;}
@@ -229,7 +230,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.4.2</div>
+  <div class="ver">v8.4.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -524,6 +525,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
+  <div class="field" id="tupperField" style="display:none">
+    <label>Tupper # <span style="font-size:11px;color:var(--text3)">(posición en el freezer)</span></label>
+    <input type="number" id="assignTupper" min="1" max="99" placeholder="Ej: 3" style="font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none;width:100%">
+  </div>
   <div class="field" style="margin-top:4px">
     <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer" onclick="toggleAbierto()">
       <div id="abiertoCheck" style="width:24px;height:24px;border:2px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"></div>
@@ -653,7 +658,8 @@ let binId=localStorage.getItem('jsonbin_bin_id')||getKey('jsonbin_bin');
 function scheduleSync(){if(syncTimeout)clearTimeout(syncTimeout);syncTimeout=setTimeout(pushToCloud,1500);}
 async function pushToCloud(){
   if(isSyncing)return;isSyncing=true;showSyncStatus('⏫ Guardando...');
-  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),ts:Date.now()};
+  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),ts:Date.now(),
+    cfg:{groq:getKey('groq_key'),gemini:getKey('gemini_key')}};
   try{
     if(!binId){
       const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':getKey('jsonbin_key'),'X-Bin-Name':'mi-alacena'},body:JSON.stringify(data)});
@@ -682,6 +688,11 @@ async function pullFromCloud(){
       if(data.hist)localStorage.setItem('hist2',JSON.stringify(data.hist));
       if(data.chat){localStorage.setItem('chat',JSON.stringify(data.chat));updateChatBadge();}
       localStorage.setItem('data_ts',String(cloudTs));
+      // Restore keys from cloud if not set locally
+      if(data.cfg){
+        if(data.cfg.groq&&!getKey('groq_key'))localStorage.setItem('cfg_groq_key',data.cfg.groq);
+        if(data.cfg.gemini&&!getKey('gemini_key'))localStorage.setItem('cfg_gemini_key',data.cfg.gemini);
+      }
       showSyncStatus('✅ Datos actualizados');
       renderAll();renderCatalog();renderCompras();renderHist();renderChat();
     } else {showSyncStatus('✅ Ya estás al día');}
@@ -895,7 +906,7 @@ async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg'){
 
 function getLocItems(l){
   const cat=loadCatalog();const stock=loadStock();
-  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null};}).filter(Boolean);
+  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null,tupper:s.tupper||null};}).filter(Boolean);
 }
 function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
@@ -990,7 +1001,7 @@ function renderInventory(){
         '<div class="item-name">'+item.nombre+'</div>'+
         '<div class="item-meta">'+
           (q?'<span class="badge-lugar '+curLoc+'">'+(curLoc==='h'?'🧊':curLoc==='f'?'❄️':'🫙')+'</span> ':'')+
-          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+
+          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+(item.tupper?' <span class="badge" style="background:#EEF0FE;color:#2D3490">❄️ #'+item.tupper+'</span>':'')+
         '</div>'+
         (item.lastBy?'<div class="item-by">por '+item.lastBy+'</div>':'')+
       '</div>'+
@@ -1097,6 +1108,11 @@ function openAssignModal(catId){
   const maxStockMin=Math.max(...allLocs.map(s=>s.stockMin||0));
   document.getElementById('assignVenc').value=activeStock.venc||'';
   document.getElementById('assignMin').value=maxStockMin||0;
+  // Restore tupper number
+  const tupperNum=stock[catId]?.f?.tupper||'';
+  const tf=document.getElementById('assignTupper');if(tf)tf.value=tupperNum;
+  const tField=document.getElementById('tupperField');
+  if(tField)tField.style.display=assignQtys.f>0?'block':'none';
   // Restore abierto state
   const wasAbierto=activeStock.abierto||false;
   aiSuggestedDate=null;
@@ -1135,14 +1151,20 @@ function getQtyStep(){
   const sub=document.getElementById('assignSub')?.textContent||'';
   return(sub.includes('kg')||sub.includes('g')||sub.includes('L')||sub.includes('ml'))?0.1:1;
 }
+function updateTupperVisibility(){
+  const tf=document.getElementById('tupperField');
+  if(tf)tf.style.display=assignQtys.f>0?'block':'none';
+}
 function setAssignQty(l,val){
   assignQtys[l]=Math.max(0,parseFloat(parseFloat(val||0).toFixed(1)));
   document.getElementById('aq'+l).value=assignQtys[l];
+  updateTupperVisibility();
 }
 function changeAssignQty(l,delta){
   const step=getQtyStep();
   assignQtys[l]=Math.max(0,parseFloat((assignQtys[l]+delta*step).toFixed(1)));
   document.getElementById('aq'+l).value=assignQtys[l];
+  updateTupperVisibility();
 }
 function saveAssignment(){
   const stock=loadStock();if(!stock[assigningCatId])stock[assigningCatId]={};
@@ -1150,8 +1172,9 @@ function saveAssignment(){
   const min=parseFloat(document.getElementById('assignMin').value)||0;
   const p=getProfile();
   // Save stock — only apply stockMin to locations with qty > 0
+  const tupperNum=document.getElementById('assignTupper')?.value||null;
   ['h','f','d'].forEach(l=>{
-    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto};
+    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto,tupper:l==='f'&&tupperNum?parseInt(tupperNum):null};
   });
   // Save first, then remove any existing auto compra ref for this item (stale)
   localStorage.setItem('stock2',JSON.stringify(stock));
