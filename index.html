@@ -232,7 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.2</div>
+  <div class="ver">v8.5.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1691,288 +1691,29 @@ function renderRapido(){
 }
 
 function renderSuperList(){
-  const compras=loadCompras().filter(c=>!c.done);
-  const el=document.getElementById('superList');
-  if(!compras.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">No hay ítems en la lista de compras</div>';return;}
-  el.innerHTML=compras.map(c=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg4)">'+
-    '<div class="check-circle'+(c.superDone?' done':'')+'" onclick="toggleSuperItem(\''+c.id+'\')">'+(c.superDone?'✓':'')+'</div>'+
-    '<span style="flex:1;font-size:14px;color:var(--text)'+(c.superDone?';text-decoration:line-through;opacity:0.5':'')+'">'+c.nombre+'</span>'+
-    (c.superDone?'':'<input type="number" value="1" min="0.1" step="0.1" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none;text-align:center" id="sq_'+c.id+'" onclick="this.select()">'+
-    '<span style="font-size:11px;color:var(--text3)">unid</span>')+
-  '</div>').join('');
-}
-
-function toggleSuperItem(id){
-  const c=loadCompras();const f=c.find(x=>x.id===id);
-  if(f)f.superDone=!f.superDone;
-  saveCompras(c);renderSuperList();
-}
-
-function confirmarSuper(){
-  const compras=loadCompras();const stock=loadStock();const catalog=loadCatalog();
-  let updated=0;
-  compras.forEach(c=>{
-    if(!c.superDone)return;
-    // Find product in catalog
-    const cat=catalog.find(p=>p.nombre.toLowerCase()===c.nombre.toLowerCase().replace(/\s*\(x[\d.]+.*?\)/,'').trim());
-    if(!cat)return;
-    const qty=parseFloat(document.getElementById('sq_'+c.id)?.value||1);
-    const l=c.origen||'d';
-    if(!stock[cat.id])stock[cat.id]={};
-    if(!stock[cat.id][l])stock[cat.id][l]={qty:0,venc:null,stockMin:0};
-    stock[cat.id][l].qty=parseFloat((stock[cat.id][l].qty+qty).toFixed(1));
-    const p=getProfile();stock[cat.id][l].lastBy=p?.name||null;
-    addHistEntry(cat.id,'agregado',qty);
-    c.done=true;updated++;
-  });
-  saveStock(stock);saveCompras(compras);
-  if(updated>0){toast(updated+' producto'+(updated!==1?'s':'')+' actualizado'+(updated!==1?'s':''));renderRapido();renderAll();}
-  else toast('Tildá los productos que compraste');
-}
-
-function renderRapidoSearch(){
-  const q=document.getElementById('rapidoSearch')?.value?.toLowerCase().trim();
-  const el=document.getElementById('rapidoResults');
-  if(!q){el.innerHTML='';return;}
-  const catalog=loadCatalog().filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q));
-  if(!catalog.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin resultados</div>';return;}
-  el.innerHTML=catalog.slice(0,5).map(p=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg4)">'+
-    '<div style="width:36px;height:36px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">'+(p.img?'<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover">': (ALL_CATS[p.cat]||'📦'))+'</div>'+
-    '<div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+'</div></div>'+
-    '<input type="number" value="1" min="0.1" step="0.1" style="width:60px;font-size:13px;padding:4px 8px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none;text-align:center" id="rq_'+p.id+'" onclick="this.select()">'+
-    '<select style="font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none" id="rl_'+p.id+'"><option value="h">🧊</option><option value="f">❄️</option><option value="d" selected>🫙</option></select>'+
-    '<button onclick="rapidoAgregar(''+p.id+'')" style="padding:6px 12px;background:#1565C0;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">+</button>'+
-  '</div>').join('');
-}
-
-function rapidoAgregar(catId){
-  const qty=parseFloat(document.getElementById('rq_'+catId)?.value||1);
-  const l=document.getElementById('rl_'+catId)?.value||'d';
-  const stock=loadStock();
-  if(!stock[catId])stock[catId]={};
-  if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
-  stock[catId][l].qty=parseFloat((stock[catId][l].qty+qty).toFixed(1));
-  const p=getProfile();stock[catId][l].lastBy=p?.name||null;
-  saveStock(stock);addHistEntry(catId,'agregado',qty);
-  checkLowStock(catId);renderAll();
-  const cat=loadCatalog().find(x=>x.id===catId);
-  toast('+'+(qty)+' '+cat?.nombre);
-  document.getElementById('rapidoSearch').value='';
-  renderRapidoSearch();
-}
-
-async function rapidoScanBarcode(input){
-  const file=input.files[0];if(!file)return;
-  const res=document.getElementById('rapidoResults');
-  res.innerHTML='<div style="font-size:13px;color:var(--text2);padding:8px">Escaneando...</div>';
-  try{
-    if('BarcodeDetector' in window){
-      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
-      const img=new Image();img.src=URL.createObjectURL(file);await new Promise(r=>img.onload=r);
-      const codes=await detector.detect(img);
-      if(codes.length>0){await rapidoLookupBarcode(codes[0].rawValue);return;}
-    }
-    const reader=new FileReader();
-    reader.onload=async(e)=>{
-      try{
-        const base64=e.target.result.split(',')[1];
-        const text=await callGeminiVision('Leé el código de barras. Respondé SOLO el número.',base64,file.type||'image/jpeg');
-        const code=text.trim().replace(/\D/g,'');
-        if(code&&code.length>4)await rapidoLookupBarcode(code);
-        else res.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px">No detectado. Buscá manualmente.</div>';
-      }catch(e){res.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px">Buscá manualmente arriba.</div>';}
-    };reader.readAsDataURL(file);
-  }catch(e){res.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px">Error al escanear.</div>';}
-}
-
-async function rapidoLookupBarcode(code){
-  const el=document.getElementById('rapidoResults');
-  el.innerHTML='<div style="font-size:13px;color:var(--text2);padding:8px">Buscando...</div>';
-  try{
-    const r=await fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json');
-    const d=await r.json();
-    if(d.status===1&&d.product){
-      const nombre=d.product.product_name_es||d.product.product_name||'Producto '+code;
-      document.getElementById('rapidoSearch').value=nombre;
-      renderRapidoSearch();
-    } else {
-      el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px">Código '+code+' no encontrado. Buscá manualmente.</div>';
-    }
-  }catch(e){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px">Error de conexión.</div>';}
-}
-
-function renderCocinandoList(){
-  const all=getAllStocked().filter(i=>i.qty>0);
-  const el=document.getElementById('cocinandoList');
-  if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin productos en stock</div>';return;}
-  // Group by category
-  const cats=[...new Set(all.map(i=>i.cat))];
-  el.innerHTML=cats.map(cat=>{
-    const items=all.filter(i=>i.cat===cat);
-    return '<div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;padding:8px 0 4px">'+cat+'</div>'+
-    items.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg4)">'+
-      '<div style="width:28px;height:28px;border-radius:6px;background:'+(COLORS[i.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden;flex-shrink:0">'+(i.img?'<img src="'+i.img+'" style="width:100%;height:100%;object-fit:cover">':(ALL_CATS[i.cat]||'📦'))+'</div>'+
-      '<div style="flex:1;font-size:13px;color:var(--text)">'+i.nombre+'<span style="font-size:11px;color:var(--text3);margin-left:4px">('+i.qty+' '+i.unidad+')</span></div>'+
-      '<input type="number" value="0" min="0" step="0.1" style="width:55px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none;text-align:center" id="cq_'+i.id+'_'+i.loc+'" onclick="this.select()" placeholder="0">'+
-      '<span style="font-size:11px;color:var(--text3)">'+i.unidad+'</span>'+
-    '</div>').join('');
-  }).join('');
-}
-
-function confirmarCocinando(){
-  const all=getAllStocked().filter(i=>i.qty>0);
-  const stock=loadStock();let updated=0;
-  all.forEach(i=>{
-    const input=document.getElementById('cq_'+i.id+'_'+i.loc);
-    const usado=parseFloat(input?.value||0);
-    if(!usado||usado<=0)return;
-    if(!stock[i.id])return;
-    if(!stock[i.id][i.loc])return;
-    stock[i.id][i.loc].qty=Math.max(0,parseFloat((stock[i.id][i.loc].qty-usado).toFixed(1)));
-    const p=getProfile();stock[i.id][i.loc].lastBy=p?.name||null;
-    addHistEntry(i.id,'consumido',usado);
-    checkLowStock(i.id);updated++;
-  });
-  if(updated>0){
-    saveStock(stock);
-    toast(updated+' ingrediente'+(updated!==1?'s':'')+' descontado'+(updated!==1?'s':''));
-    renderAll();renderCocinandoList();
-    // Reset inputs
-    all.forEach(i=>{const inp=document.getElementById('cq_'+i.id+'_'+i.loc);if(inp)inp.value='0';});
-  } else {
-    toast('Ingresá cuánto usaste de cada ingrediente');
-  }
-}
-
-// STATS GENERALES
-function renderGStats(){
-  const hist=loadHist();
-  const all=getAllStocked();
-  const catalog=loadCatalog();
-  const compras=loadCompras();
-
-  // Totales
-  const totalH=getLocItems('h').length, totalF=getLocItems('f').length, totalD=getLocItems('d').length;
-  const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
-  const proxVenc=all.filter(i=>i.venc&&daysLeft(i.venc)>=0&&daysLeft(i.venc)<=7).length;
-  const bajoStock=all.filter(i=>i.stockMin>0&&i.qty<=i.stockMin).length;
-
-  // Consumo por periodo
-  const now=new Date();
-  const hace7=new Date(now);hace7.setDate(hace7.getDate()-7);
-  const hace30=new Date(now);hace30.setDate(hace30.getDate()-30);
-  const cons7=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace7);
-  const cons30=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace30);
-  const totalCons7=cons7.reduce((s,h)=>s+(h.delta||1),0);
-  const totalCons30=cons30.reduce((s,h)=>s+(h.delta||1),0);
-
-  // Top consumidos 30d
-  const consCnt={};
-  cons30.forEach(h=>{consCnt[h.nombre]=(consCnt[h.nombre]||0)+(h.delta||1);});
-  const topCons=Object.entries(consCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxC=topCons[0]?.[1]||1;
-
-  // Top categorías por stock
-  const catCnt={};all.forEach(i=>{catCnt[i.cat]=(catCnt[i.cat]||0)+i.qty;});
-  const topCat=Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxCat=topCat[0]?.[1]||1;
-
-  // Compras completadas
-  const comprasHechas=hist.filter(h=>h.accion==='comprado'&&new Date(h.ts)>=hace30).length;
-
-  // Consumo por día (últimos 14 días)
-  const dias14=[];
-  for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);dias14.push(d);}
-  const consPorDia=dias14.map(d=>{
-    const key=d.toISOString().split('T')[0];
-    return hist.filter(h=>h.accion==='consumido'&&h.ts.startsWith(key)).reduce((s,h)=>s+(h.delta||1),0);
-  });
-  const maxDia=Math.max(...consPorDia,1);
-
-  document.getElementById('gstatsContent').innerHTML=
-    // Header stats
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'+
-      '<div class="stat h"><div class="stat-val h">'+totalH+'</div><div class="stat-lbl">🧊 Heladera</div></div>'+
-      '<div class="stat f"><div class="stat-val f">'+totalF+'</div><div class="stat-lbl">❄️ Freezer</div></div>'+
-      '<div class="stat d"><div class="stat-val d">'+totalD+'</div><div class="stat-lbl">🫙 Despensa</div></div>'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
-      '<div class="stat cat"><div class="stat-val cat">'+catalog.length+'</div><div class="stat-lbl">📋 En catálogo</div></div>'+
-      '<div class="stat h"><div class="stat-val h" style="'+(vencidos>0?'color:#A32D2D':'')+'">'+vencidos+'</div><div class="stat-lbl">⚠️ Vencidos</div></div>'+
-      '<div class="stat h"><div class="stat-val h" style="'+(proxVenc>0?'color:#BA7517':'')+'">'+proxVenc+'</div><div class="stat-lbl">⏰ Vencen en 7d</div></div>'+
-      '<div class="stat h"><div class="stat-val h" style="'+(bajoStock>0?'color:#72243E':'')+'">'+bajoStock+'</div><div class="stat-lbl">📉 Stock bajo</div></div>'+
-    '</div>'+
-    // Consumo
-    '<div class="card"><div class="section-lbl">Consumo</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'+
-        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons7.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 7 días</div></div>'+
-        '<div style="text-align:center;padding:10px;background:var(--bg3);border-radius:10px"><div style="font-size:22px;font-weight:700;color:#1D9E75">'+totalCons30.toFixed(1).replace(/\.0$/,'')+'</div><div style="font-size:12px;color:var(--text2)">últimos 30 días</div></div>'+
-      '</div>'+
-      // Mini bar chart last 14 days
-      '<div style="margin-top:12px"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase">Consumo diario (14 días)</div>'+
-      '<div style="display:flex;align-items:flex-end;gap:3px;height:50px">'+
-      consPorDia.map((v,i)=>{
-        const h=maxDia>0?Math.max(4,Math.round(v/maxDia*46)):4;
-        const d=dias14[i];const isToday=d.toDateString()===now.toDateString();
-        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'+
-          '<div style="width:100%;height:'+h+'px;background:'+(isToday?'#378ADD':v>0?'#1D9E75':'var(--bg4)')+';border-radius:3px 3px 0 0" title="'+v+'"></div>'+
-        '</div>';
-      }).join('')+
-      '</div>'+
-      '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--text3)">'+
-        '<span>'+fmtDay(dias14[0].toISOString())+'</span><span>Hoy</span>'+
-      '</div></div>'+
-    '</div>'+
-    // Compras
-    '<div class="card"><div class="section-lbl">Compras (30 días)</div>'+
-      '<div style="font-size:22px;font-weight:700;color:#8A3A8A;margin-top:6px">'+comprasHechas+'</div>'+
-      '<div style="font-size:12px;color:var(--text2)">ítems marcados como comprados</div>'+
-    '</div>'+
-    // Top consumidos
-    (topCons.length?'<div class="card"><div class="section-lbl">Más consumidos (30 días)</div>'+
-      topCons.map(([n,v])=>
-        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
-        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
-        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#1D9E75;width:'+Math.round(v/maxC*100)+'%"></div></div>'+
-        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
-      ).join('')+'</div>':'')+
-    // Top categorías
-    (topCat.length?'<div class="card"><div class="section-lbl">Stock por categoría</div>'+
-      topCat.map(([n,v])=>
-        '<div style="display:flex;align-items:center;gap:8px;margin-top:8px">'+
-        '<div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div>'+
-        '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#378ADD;width:'+Math.round(v/maxCat*100)+'%"></div></div>'+
-        '<div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>'
-      ).join('')+'</div>':'');
-}
-
-// ============================================================
-// MODO LLEGUÉ DEL SUPER
-// ============================================================
-let superCart={}; // {catId: {nombre, qty, loc, unidad}}
-
-function renderSuperList(){
   const q=document.getElementById('superSearch').value.toLowerCase().trim();
   const catalog=loadCatalog();
-  const stock=loadStock();
   let items=q?catalog.filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):catalog;
   const el=document.getElementById('superList');
   if(!items.length){el.innerHTML='<div class="empty">Sin resultados</div>';return;}
-  el.innerHTML=items.slice(0,20).map(p=>{
+  let out='';
+  items.slice(0,20).forEach(p=>{
     const inCart=superCart[p.id];
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)">'+
-      '<div style="width:36px;height:36px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">'+(p.img?'<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover">':( ALL_CATS[p.cat]||'📦'))+'</div>'+
-      '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+'</div></div>'+
-      '<div style="display:flex;align-items:center;gap:6px">'+
-        '<select onchange="setSuperLoc(''+p.id+'',this.value)" style="font-size:11px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text)">'+
-          '<option value="h"'+(inCart?.loc==='h'?' selected':'')+'>🧊</option>'+
-          '<option value="f"'+(inCart?.loc==='f'?' selected':'')+'>❄️</option>'+
-          '<option value="d"'+(inCart?.loc==='d'?' selected':'')+'>🫙</option>'+
-        '</select>'+
-        '<button onclick="addToSuperCart(''+p.id+'')" style="padding:6px 12px;border:none;border-radius:8px;background:'+(inCart?'#2E7D32':'#F9A825')+';color:#fff;font-size:13px;font-weight:600;cursor:pointer">'+(inCart?'✓ '+inCart.qty:'+ Agregar')+'</button>'+
-      '</div>'+
-    '</div>';
-  }).join('');
+    const icon=p.img?('<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover">'):(ALL_CATS[p.cat]||'📦');
+    const bg=inCart?'#2E7D32':'#F9A825';
+    const btnTxt=inCart?('✓ '+inCart.qty):'+ Agregar';
+    out+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)">';
+    out+='<div style="width:36px;height:36px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">'+icon+'</div>';
+    out+='<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+'</div></div>';
+    out+='<select id="sl_'+p.id+'" style="font-size:11px;padding:4px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text)">';
+    out+='<option value="h"'+(inCart?.loc==='h'?' selected':'')+'>🧊</option>';
+    out+='<option value="f"'+(inCart?.loc==='f'?' selected':'')+'>❄️</option>';
+    out+='<option value="d"'+(inCart?.loc==='d'?' selected':'')+'>🫙</option>';
+    out+='</select>';
+    out+='<button onclick="addToSuperCart(''+p.id+'')" style="padding:6px 10px;border:none;border-radius:8px;background:'+bg+';color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+btnTxt+'</button>';
+    out+='</div>';
+  });
+  el.innerHTML=out;
 }
 
 function setSuperLoc(catId,loc){
@@ -1996,13 +1737,17 @@ function renderSuperCart(){
   const el=document.getElementById('superCart');
   if(!items.length){card.style.display='none';return;}
   card.style.display='block';
-  el.innerHTML=items.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg4)">'+
-    '<div style="flex:1;font-size:14px;color:var(--text)">'+i.nombre+'</div>'+
-    '<input type="number" value="'+i.qty+'" min="0.1" step="0.1" style="width:60px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);text-align:center" onchange="superCart[''+i.catId+''].qty=parseFloat(this.value)||1">'+
-    '<span style="font-size:11px;color:var(--text3)">'+i.unidad+'</span>'+
-    '<span style="font-size:13px">'+(i.loc==='h'?'🧊':i.loc==='f'?'❄️':'🫙')+'</span>'+
-    '<button onclick="removeFromSuperCart(''+i.catId+'')" style="border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:16px">✕</button>'+
-  '</div>').join('');
+  let out='';
+  items.forEach(i=>{
+    out+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg4)">';
+    out+='<div style="flex:1;font-size:14px;color:var(--text)">'+i.nombre+'</div>';
+    out+='<input type="number" value="'+i.qty+'" min="0.1" step="0.1" style="width:60px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);text-align:center" onchange="superCart[''+i.catId+''].qty=parseFloat(this.value)||1">';
+    out+='<span style="font-size:11px;color:var(--text3)">'+i.unidad+'</span>';
+    out+='<span style="font-size:13px">'+(i.loc==='h'?'🧊':i.loc==='f'?'❄️':'🫙')+'</span>';
+    out+='<button onclick="removeFromSuperCart(''+i.catId+'')" style="border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:18px">✕</button>';
+    out+='</div>';
+  });
+  el.innerHTML=out;
 }
 
 function removeFromSuperCart(catId){
