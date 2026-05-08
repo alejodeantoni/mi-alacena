@@ -232,7 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.3</div>
+  <div class="ver">v8.5.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1691,33 +1691,46 @@ function renderRapido(){
 }
 
 function renderSuperList(){
-  const q=document.getElementById('superSearch').value.toLowerCase().trim();
+  const q=(document.getElementById('superSearch').value||'').toLowerCase().trim();
   const catalog=loadCatalog();
   let items=q?catalog.filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):catalog;
   const el=document.getElementById('superList');
   if(!items.length){el.innerHTML='<div class="empty">Sin resultados</div>';return;}
-  let out='';
+  el.innerHTML='';
   items.slice(0,20).forEach(p=>{
     const inCart=superCart[p.id];
-    const icon=p.img?('<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover">'):(ALL_CATS[p.cat]||'📦');
-    const bg=inCart?'#2E7D32':'#F9A825';
-    const btnTxt=inCart?('✓ '+inCart.qty):'+ Agregar';
-    out+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)">';
-    out+='<div style="width:36px;height:36px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">'+icon+'</div>';
-    out+='<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+'</div></div>';
-    out+='<select id="sl_'+p.id+'" style="font-size:11px;padding:4px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text)">';
-    out+='<option value="h"'+(inCart?.loc==='h'?' selected':'')+'>🧊</option>';
-    out+='<option value="f"'+(inCart?.loc==='f'?' selected':'')+'>❄️</option>';
-    out+='<option value="d"'+(inCart?.loc==='d'?' selected':'')+'>🫙</option>';
-    out+='</select>';
-    out+='<button onclick="addToSuperCart(''+p.id+'')" style="padding:6px 10px;border:none;border-radius:8px;background:'+bg+';color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+btnTxt+'</button>';
-    out+='</div>';
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)';
+    // Icon
+    const icon=document.createElement('div');
+    icon.style.cssText='width:36px;height:36px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0';
+    if(p.img){const img=document.createElement('img');img.src=p.img;img.style.cssText='width:100%;height:100%;object-fit:cover';icon.appendChild(img);}
+    else icon.textContent=ALL_CATS[p.cat]||'📦';
+    div.appendChild(icon);
+    // Name
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    info.innerHTML='<div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+'</div>';
+    div.appendChild(info);
+    // Controls
+    const ctrl=document.createElement('div');ctrl.style.cssText='display:flex;align-items:center;gap:6px';
+    const sel=document.createElement('select');
+    sel.id='sl_'+p.id;
+    sel.style.cssText='font-size:11px;padding:4px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text)';
+    ['h','f','d'].forEach(v=>{
+      const opt=document.createElement('option');opt.value=v;
+      opt.textContent=v==='h'?'🧊':v==='f'?'❄️':'🫙';
+      if(inCart?.loc===v)opt.selected=true;
+      sel.appendChild(opt);
+    });
+    ctrl.appendChild(sel);
+    const btn=document.createElement('button');
+    btn.style.cssText='padding:6px 10px;border:none;border-radius:8px;background:'+(inCart?'#2E7D32':'#F9A825')+';color:#fff;font-size:12px;font-weight:600;cursor:pointer';
+    btn.textContent=inCart?'✓ '+inCart.qty:'+ Agregar';
+    btn.onclick=()=>addToSuperCart(p.id);
+    ctrl.appendChild(btn);
+    div.appendChild(ctrl);
+    el.appendChild(div);
   });
-  el.innerHTML=out;
-}
-
-function setSuperLoc(catId,loc){
-  if(superCart[catId])superCart[catId].loc=loc;
 }
 
 function addToSuperCart(catId){
@@ -1737,17 +1750,21 @@ function renderSuperCart(){
   const el=document.getElementById('superCart');
   if(!items.length){card.style.display='none';return;}
   card.style.display='block';
-  let out='';
+  el.innerHTML='';
   items.forEach(i=>{
-    out+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg4)">';
-    out+='<div style="flex:1;font-size:14px;color:var(--text)">'+i.nombre+'</div>';
-    out+='<input type="number" value="'+i.qty+'" min="0.1" step="0.1" style="width:60px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);text-align:center" onchange="superCart[''+i.catId+''].qty=parseFloat(this.value)||1">';
-    out+='<span style="font-size:11px;color:var(--text3)">'+i.unidad+'</span>';
-    out+='<span style="font-size:13px">'+(i.loc==='h'?'🧊':i.loc==='f'?'❄️':'🫙')+'</span>';
-    out+='<button onclick="removeFromSuperCart(''+i.catId+'')" style="border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:18px">✕</button>';
-    out+='</div>';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg4)';
+    const nm=document.createElement('div');nm.style.cssText='flex:1;font-size:14px;color:var(--text)';nm.textContent=i.nombre;
+    const inp=document.createElement('input');inp.type='number';inp.value=i.qty;inp.min=0.1;inp.step=0.1;
+    inp.style.cssText='width:60px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);text-align:center';
+    inp.onchange=()=>{superCart[i.catId].qty=parseFloat(inp.value)||1;};
+    const un=document.createElement('span');un.style.cssText='font-size:11px;color:var(--text3)';un.textContent=i.unidad;
+    const loc=document.createElement('span');loc.style.fontSize='13px';loc.textContent=i.loc==='h'?'🧊':i.loc==='f'?'❄️':'🫙';
+    const del=document.createElement('button');del.style.cssText='border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:18px';
+    del.textContent='✕';del.onclick=()=>removeFromSuperCart(i.catId);
+    [nm,inp,un,loc,del].forEach(x=>row.appendChild(x));
+    el.appendChild(row);
   });
-  el.innerHTML=out;
 }
 
 function removeFromSuperCart(catId){
@@ -1885,17 +1902,25 @@ function recetaCardHTML(r){
   const rid='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   window._recetas=window._recetas||{};
   window._recetas[rid]={nombre,ingredientes:tags.map(n=>({nombre:n}))};
-  let html2='<div class="receta-card">';
-  html2+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-  html2+='<div class="receta-title" style="flex:1">🍳 '+nombre+'</div>';
-  html2+='<button onclick="abrirModoCocinandoById(''+rid+'')" style="padding:5px 10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer">👨‍🍳 Cocinar</button>';
-  html2+='</div>';
-  html2+='<div class="receta-tags">'+tags.map(i=>'<span class="receta-tag">'+i+'</span>').join('')+'</div>';
-  html2+='<div class="receta-body" style="margin-top:10px">'+pasos.map((paso,i)=>(i+1)+'. '+paso).join('\n')+'</div>';
-  if(r.opcional)html2+='<div style="margin-top:8px;font-size:12px;color:var(--text2)">💡 '+r.opcional+'</div>';
-  html2+='</div>';
-  return html2;
+  const wrap=document.createElement('div');wrap.className='receta-card';
+  const header=document.createElement('div');header.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+  const title=document.createElement('div');title.className='receta-title';title.style.flex='1';title.textContent='🍳 '+nombre;
+  const btn=document.createElement('button');btn.style.cssText='padding:5px 10px;border:none;border-radius:8px;background:#1D9E75;color:#fff;font-size:12px;font-weight:600;cursor:pointer';
+  btn.textContent='👨‍🍳 Cocinar';
+  btn.onclick=(function(id){return function(){abrirModoCocinandoById(id);};})(rid);
+  header.appendChild(title);header.appendChild(btn);wrap.appendChild(header);
+  const tagsDiv=document.createElement('div');tagsDiv.className='receta-tags';
+  tags.forEach(t=>{const s=document.createElement('span');s.className='receta-tag';s.textContent=t;tagsDiv.appendChild(s);});
+  wrap.appendChild(tagsDiv);
+  const body=document.createElement('div');body.className='receta-body';body.style.marginTop='10px';
+  body.textContent=pasos.map((p,i)=>(i+1)+'. '+p).join('
+');
+  wrap.appendChild(body);
+  if(r.opcional){const opt=document.createElement('div');opt.style.cssText='margin-top:8px;font-size:12px;color:var(--text2)';opt.textContent='💡 '+r.opcional;wrap.appendChild(opt);}
+  // Return as HTML string by appending to temp container
+  const tmp=document.createElement('div');tmp.appendChild(wrap);return tmp.innerHTML;
 }
+
 function abrirModoCocinandoById(rid){
   const r=window._recetas&&window._recetas[rid];
   if(r)abrirModoCocinando(r.nombre,r.ingredientes);
@@ -1969,23 +1994,28 @@ function renderComprasPorSeccion(){
   const compras=loadCompras().filter(c=>!c.done);
   const catalog=loadCatalog();
   if(!compras.length)return '<div class="empty">Lista vacía</div>';
-  // Group by section
   const grupos={};
   compras.forEach(c=>{
-    const cat=catalog.find(p=>p.nombre===c.nombre.split(' (')[0])?.cat||'Otros';
+    const prod=catalog.find(p=>p.nombre===c.nombre.split(' (')[0]);
+    const cat=prod?.cat||'Otros';
     const sec=SECCION_SUPER[cat]||'📦 Otros';
     if(!grupos[sec])grupos[sec]=[];
     grupos[sec].push(c);
   });
-  return Object.entries(grupos).sort((a,b)=>a[0].localeCompare(b[0])).map(([sec,items])=>
-    '<div style="margin-bottom:12px">'+
-    '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">'+sec+'</div>'+
-    items.map(c=>'<div class="compra-item"><div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(''+c.id+'')">'+(c.done?'✓':'')+'</div>'+
-      '<span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+'</span>'+
-      '<button class="icon-btn" onclick="deleteCompra(''+c.id+'')">✕</button></div>'
-    ).join('')+
-    '</div>'
-  ).join('');
+  let out='';
+  Object.entries(grupos).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([sec,items])=>{
+    out+='<div style="margin-bottom:12px">';
+    out+='<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">'+sec+'</div>';
+    items.forEach(c=>{
+      out+='<div class="compra-item">';
+      out+='<div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div>';
+      out+='<span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+'</span>';
+      out+='<button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button>';
+      out+='</div>';
+    });
+    out+='</div>';
+  });
+  return out;
 }
 
 // HISTORIAL
