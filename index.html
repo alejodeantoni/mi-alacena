@@ -232,7 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.5</div>
+  <div class="ver">v8.5.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1862,7 +1862,7 @@ function abrirModoCocinando(recetaNombre, ingredientes){
       '<div style="font-size:13px;color:var(--text2);margin-bottom:10px">¿Cuánto usaste de cada ingrediente?</div>'+
       '<div id="cookIngList"></div>'+
       '<button class="btn-primary" style="background:#1D9E75" onclick="confirmarCocinado()">✅ Descontar del stock</button>'+
-      '<button class="btn-secondary" onclick="document.getElementById('cookModal').classList.remove('open')">Cancelar</button>'+
+      '<button class="btn-secondary" onclick="closeCookModal()">Cancelar</button>'+
     '</div>';
     document.body.appendChild(modal);
   }
@@ -1872,6 +1872,7 @@ function abrirModoCocinando(recetaNombre, ingredientes){
   modal._ingredientes=ingredientes;
 }
 
+function closeCookModal(){const m=document.getElementById("cookModal");if(m)m.classList.remove("open");}
 function confirmarCocinado(){
   const catalog=loadCatalog();const stock=loadStock();const p=getProfile();
   let n=0;
