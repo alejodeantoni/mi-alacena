@@ -37,6 +37,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loc-tab.active.gstats{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20;font-weight:600}
 .loc-tab.active.super{background:#FFF8E1;border-color:#F9A825;color:#E65100;font-weight:600}
 .loc-tab.active.esp{background:#FBE9E7;border-color:#BF360C;color:#7F1D0D;font-weight:600}
+.esp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.esp-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.esp-card.tengo{border-color:#BF360C;background:#FBE9E7}
+.esp-card.notengo{opacity:0.4}
+.esp-card.poco{border-color:#E8A020;background:#FEF3E2}
+.esp-card-icon{font-size:26px;display:block;margin-bottom:3px}
+.esp-card-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.2;margin-bottom:5px}
+.esp-level{display:flex;gap:3px;justify-content:center}
+.esp-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2)}
+.esp-dot.on{background:#BF360C;border-color:#BF360C}
+.esp-dot.warn{background:#E8A020;border-color:#E8A020}
+.esp-badge-poco{position:absolute;top:4px;right:4px;font-size:9px;background:#E8A020;color:#fff;padding:1px 5px;border-radius:100px;font-weight:700}
 .loc-tab.active.rapido{background:#FFF3E0;border-color:#E65100;color:#BF360C;font-weight:600}
 .tab-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
@@ -233,7 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.9</div>
+  <div class="ver">v8.6.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -454,8 +466,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ESPECIAS -->
 <div id="sc-esp" class="screen" style="display:none">
-  <div class="search-bar">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
     <input id="espSearch" placeholder="Buscar especia..." oninput="renderEsp()" style="flex:1;font-size:14px;padding:8px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none">
+    <button onclick="toggleEspView()" id="espViewBtn" style="padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);cursor:pointer;font-size:12px;white-space:nowrap">☰ Lista</button>
   </div>
   <div id="espStats" style="margin-bottom:10px"></div>
   <div id="espList"></div>
@@ -737,7 +750,7 @@ let binId=localStorage.getItem('jsonbin_bin_id')||getKey('jsonbin_bin');
 function scheduleSync(){if(syncTimeout)clearTimeout(syncTimeout);syncTimeout=setTimeout(pushToCloud,1500);}
 async function pushToCloud(){
   if(isSyncing)return;isSyncing=true;showSyncStatus('⏫ Guardando...');
-  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),ts:Date.now(),
+  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),especias:loadEspecias(),ts:Date.now(),
     cfg:{groq:getKey('groq_key'),gemini:getKey('gemini_key')}};
   try{
     if(!binId){
@@ -768,6 +781,7 @@ async function pullFromCloud(){
       if(data.chat){localStorage.setItem('chat',JSON.stringify(data.chat));updateChatBadge();}
       localStorage.setItem('data_ts',String(cloudTs));
       // Restore keys from cloud if not set locally
+      if(data.especias)localStorage.setItem('especias',JSON.stringify(data.especias));
       if(data.cfg){
         if(data.cfg.groq&&!getKey('groq_key'))localStorage.setItem('cfg_groq_key',data.cfg.groq);
         if(data.cfg.gemini&&!getKey('gemini_key'))localStorage.setItem('cfg_gemini_key',data.cfg.gemini);
@@ -1482,7 +1496,7 @@ async function checkReceta(){
   catch(e){document.getElementById('recetaResults').innerHTML='<div class="empty">Error</div>';}
 }
 function agregarFaltantes(nombres){const compras=loadCompras();let n=0;nombres.forEach(nom=>{if(!compras.find(c=>c.nombre.toLowerCase()===nom.toLowerCase())){compras.push({id:Date.now().toString()+Math.random(),nombre:nom,done:false,origen:loc});n++;}});saveCompras(compras);toast(n+' ítem'+(n!==1?'s':'')+' agregado'+(n!==1?'s':''));}
-
+        out+='<div class="esp-dot'+(on?(warn?' warn':' on'):'')+'" onclick="setEspNivel(\''+p.id+'\','+( n===lv?0:lv)+')" title="'+(lv===1?'Poco':lv===2?'Medio':'Lleno')+'"></div>';
 // STATS
 function renderStatsPage(){
   const all=getAllStocked();const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
@@ -1999,6 +2013,16 @@ const SECCION_SUPER={
   'Snacks':'🍪 Snacks','Especias':'🌶️ Especias','Congelados':'🧊 Congelados',
   'Limpieza':'🧹 Limpieza','Pastas caseras':'🍝 Pastas','Salsas':'🫕 Salsas','Otros':'📦 Otros'
 };
+// Tienda mapping for each category
+const TIENDA_CAT={
+  'Lácteos':'supermercado','Carnes y aves':'supermercado','Pescados':'supermercado',
+  'Fiambres':'supermercado','Fiambres al vacío':'supermercado','Verduras':'verdulería',
+  'Frutas':'verdulería','Bebidas':'supermercado','Harinas y cereales':'dietética',
+  'Arroz y pastas':'supermercado','Aceites':'supermercado','Conservas':'supermercado',
+  'Snacks':'supermercado','Especias':'dietética','Congelados':'supermercado',
+  'Limpieza':'supermercado','Pastas caseras':'supermercado','Salsas':'supermercado','Otros':'supermercado'
+};
+const TIENDA_ICON={'supermercado':'🛒','verdulería':'🥦','dietética':'🌾','otro':'📦'};
 
 function renderComprasPorSeccion(){
   const compras=loadCompras().filter(c=>!c.done);
@@ -2088,68 +2112,121 @@ function renderGStats(){
 }
 
 // ESPECIAS
+// Storage: especiero uses localStorage 'especias' = {id: {nivel: 0-3, apertura: date, nota}}
+// nivel: 0=no tengo, 1=poco, 2=medio, 3=lleno
+function loadEspecias(){return JSON.parse(localStorage.getItem('especias')||'{}');}
+function saveEspecias(e){localStorage.setItem('especias',JSON.stringify(e));scheduleSync();}
+
+let espView='grid'; // 'grid' or 'list'
+function toggleEspView(){
+  espView=espView==='grid'?'list':'grid';
+  document.getElementById('espViewBtn').textContent=espView==='grid'?'☰ Lista':'⊞ Grilla';
+  renderEsp();
+}
+
+function setEspNivel(catId, nivel){
+  const esp=loadEspecias();
+  if(!esp[catId])esp[catId]={nivel:0,apertura:null};
+  esp[catId].nivel=nivel;
+  if(nivel>0&&!esp[catId].apertura)esp[catId].apertura=new Date().toISOString().split('T')[0];
+  if(nivel===0)esp[catId].apertura=null;
+  saveEspecias(esp);
+  // If poco (1) add to compras
+  if(nivel===1){
+    const cat=loadCatalog().find(p=>p.id===catId);
+    if(cat){
+      const compras=loadCompras();
+      const key='esp_'+catId;
+      if(!compras.find(c=>c.ref===key&&!c.done)){
+        compras.push({id:Date.now().toString(),nombre:cat.nombre,done:false,origen:'d',ref:key,auto:true,tienda:'dietética'});
+        saveCompras(compras);
+        toast('Agregado a compras 🛒');
+      }
+    }
+  }
+  renderEsp();
+}
+
 function renderEsp(){
   const q=(document.getElementById('espSearch')?.value||'').toLowerCase().trim();
   const catalog=loadCatalog();
-  const stock=loadStock();
-  // Get all spice products from catalog
-  const especias=catalog.filter(p=>p.cat==='Especias'||(q&&p.nombre.toLowerCase().includes(q)));
-  const filtered=q?especias:catalog.filter(p=>p.cat==='Especias');
-  // Stats
-  const total=filtered.length;
-  const conStock=filtered.filter(p=>{
-    const s=stock[p.id];
-    return s&&(s.h?.qty>0||s.f?.qty>0||s.d?.qty>0);
-  }).length;
-  const sinStock=total-conStock;
+  const esp=loadEspecias();
+  let items=catalog.filter(p=>p.cat==='Especias');
+  if(q)items=catalog.filter(p=>p.nombre.toLowerCase().includes(q)||(p.cat==='Especias'&&p.nombre.toLowerCase().includes(q)));
+  if(!q)items=catalog.filter(p=>p.cat==='Especias');
+
+  const total=items.length;
+  const conStock=items.filter(p=>esp[p.id]?.nivel>0).length;
+  const poco=items.filter(p=>esp[p.id]?.nivel===1).length;
+
   document.getElementById('espStats').innerHTML=
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px">'+
-      '<div class="stat" style="background:#FBE9E7"><div class="stat-val" style="color:#BF360C">'+total+'</div><div class="stat-lbl">Total</div></div>'+
-      '<div class="stat" style="background:#EAF3DE"><div class="stat-val" style="color:#27500A">'+conStock+'</div><div class="stat-lbl">Con stock</div></div>'+
-      '<div class="stat" style="background:#F5F5F5"><div class="stat-val" style="color:#666">'+sinStock+'</div><div class="stat-lbl">Sin stock</div></div>'+
+    '<div class="stat" style="background:#FBE9E7"><div class="stat-val" style="color:#BF360C;font-size:18px">'+total+'</div><div class="stat-lbl">Total</div></div>'+
+    '<div class="stat" style="background:#EAF3DE"><div class="stat-val" style="color:#27500A;font-size:18px">'+conStock+'</div><div class="stat-lbl">Tengo</div></div>'+
+    '<div class="stat" style="background:#FEF3E2"><div class="stat-val" style="color:#E8A020;font-size:18px">'+poco+'</div><div class="stat-lbl">Poco</div></div>'+
     '</div>';
+
   const el=document.getElementById('espList');
-  if(!filtered.length){
-    el.innerHTML='<div class="empty">No hay especias en el catálogo.<br>Agregá productos con categoría "Especias".</div>';
-    return;
-  }
-  // Sort: with stock first, then alphabetically
-  filtered.sort((a,b)=>{
-    const aStock=stock[a.id]&&(stock[a.id].h?.qty>0||stock[a.id].f?.qty>0||stock[a.id].d?.qty>0);
-    const bStock=stock[b.id]&&(stock[b.id].h?.qty>0||stock[b.id].f?.qty>0||stock[b.id].d?.qty>0);
-    if(aStock&&!bStock)return -1;if(!aStock&&bStock)return 1;
+  if(!items.length){el.innerHTML='<div class="empty">No hay especias.<br>Agregá productos con categoría "Especias".</div>';return;}
+
+  // Sort: lleno > medio > poco > no tengo, then alpha
+  items.sort((a,b)=>{
+    const na=esp[a.id]?.nivel||0, nb=esp[b.id]?.nivel||0;
+    if(na!==nb)return nb-na;
     return a.nombre.localeCompare(b.nombre);
   });
-  let out='';
-  filtered.forEach(p=>{
-    const s=stock[p.id]||{};
-    const locs=[];
-    if(s.h?.qty>0)locs.push({l:'h',icon:'🧊',qty:s.h.qty,venc:s.h.venc});
-    if(s.f?.qty>0)locs.push({l:'f',icon:'❄️',qty:s.f.qty,venc:s.f.venc});
-    if(s.d?.qty>0)locs.push({l:'d',icon:'🫙',qty:s.d.qty,venc:s.d.venc});
-    const hasStock=locs.length>0;
-    const img=p.img?('<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'):'🌶️';
-    out+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;opacity:'+(hasStock?1:0.5)+'">'+
-      '<div style="width:44px;height:44px;border-radius:10px;background:#FBE9E7;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">'+img+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div>'+
-        (hasStock?
-          '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'+locs.map(loc=>
-            '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:'+(loc.l==='h'?'#deeefb':loc.l==='f'?'#EEF0FE':'#faeeda')+';color:'+(loc.l==='h'?'#185FA5':loc.l==='f'?'#2D3490':'#633806')+'">'+
-            loc.icon+' '+loc.qty+' '+p.unidad+(loc.venc?' · '+getBadge(loc.venc):'')+
-            '</span>'
-          ).join('')+'</div>'
-          :'<div style="font-size:12px;color:var(--text3);margin-top:2px">Sin stock</div>'
-        )+
-        (p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+
-      '</div>'+
-      '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'+
-        '<button onclick="openAssignModal(\''+p.id+'\')" style="padding:6px 10px;border:none;border-radius:8px;background:#BF360C;color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+(hasStock?'✏️':'+ Agregar')+'</button>'+
-      '</div>'+
-    '</div>';
-  });
-  el.innerHTML=out;
+
+  if(espView==='grid'){
+    el.innerHTML='<div class="esp-grid" id="espGridInner"></div>';
+    const grid=document.getElementById('espGridInner');
+    items.forEach(p=>{
+      const e=esp[p.id]||{nivel:0};
+      const n=e.nivel||0;
+      const cls=n===0?'notengo':n===1?'poco':'tengo';
+      const card=document.createElement('div');card.className='esp-card '+cls;
+      if(n===1){const badge=document.createElement('div');badge.className='esp-badge-poco';badge.textContent='POCO';card.appendChild(badge);}
+      if(p.img){const img=document.createElement('img');img.className='esp-card-img';img.src=p.img;card.appendChild(img);}
+      else{const ico=document.createElement('span');ico.className='esp-card-icon';ico.textContent='🌶️';card.appendChild(ico);}
+      const nm=document.createElement('div');nm.className='esp-card-name';nm.textContent=p.nombre;card.appendChild(nm);
+      const lvl=document.createElement('div');lvl.className='esp-level';
+      [1,2,3].forEach(lv=>{
+        const dot=document.createElement('div');
+        const on=n>=lv;const warn=n===1&&lv===1;
+        dot.className='esp-dot'+(on?(warn?' warn':' on'):'');
+        dot.title=lv===1?'Poco':lv===2?'Medio':'Lleno';
+        dot.onclick=(function(id,cur,v){return function(){setEspNivel(id,cur===v?0:v);};})(p.id,n,lv);
+        lvl.appendChild(dot);
+      });
+      card.appendChild(lvl);
+      if(e.apertura){const ap=document.createElement('div');ap.style.cssText='font-size:9px;color:var(--text3);margin-top:3px';ap.textContent='desde '+fmtDay(e.apertura);card.appendChild(ap);}
+      grid.appendChild(card);
+    });
+  } else {
+    // List view using DOM
+    el.innerHTML='';
+    if(!items.length){el.innerHTML='<div class="empty">Sin especias</div>';return;}
+    items.forEach(p=>{
+      const e=esp[p.id]||{nivel:0};const n=e.nivel||0;
+      const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px';
+      if(p.img){const img=document.createElement('img');img.src=p.img;img.style.cssText='width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0';row.appendChild(img);}
+      else{const ico=document.createElement('span');ico.style.fontSize='22px';ico.textContent='🌶️';row.appendChild(ico);}
+      const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+      const nm=document.createElement('div');nm.style.cssText='font-size:14px;font-weight:500;color:var(--text)';nm.textContent=p.nombre;info.appendChild(nm);
+      if(e.apertura){const ap=document.createElement('div');ap.style.cssText='font-size:11px;color:var(--text3)';ap.textContent='desde '+fmtDay(e.apertura);info.appendChild(ap);}
+      row.appendChild(info);
+      const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px';
+      [{v:0,t:'✗',bg:'var(--bg4)',c:'var(--text3)'},{v:1,t:'poco',bg:'#FEF3E2',c:'#E8A020'},{v:2,t:'medio',bg:'#EAF3DE',c:'#1D9E75'},{v:3,t:'lleno',bg:'#deeefb',c:'#185FA5'}].forEach(opt=>{
+        const b=document.createElement('button');
+        b.style.cssText='padding:4px 8px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:'+(n===opt.v?opt.bg:'var(--bg4)')+';color:'+(n===opt.v?opt.c:'var(--text3)');
+        b.textContent=opt.t;
+        b.onclick=(function(id,v){return function(){setEspNivel(id,v);};})(p.id,opt.v);
+        btns.appendChild(b);
+      });
+      row.appendChild(btns);el.appendChild(row);
+    });
+  }
 }
+
 
 // HISTORIAL
 function renderHist(){
