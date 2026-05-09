@@ -36,6 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loc-tab.active.rec2{background:#FEF3E2;border-color:#E8A020;color:#8A5000;font-weight:600}
 .loc-tab.active.gstats{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20;font-weight:600}
 .loc-tab.active.super{background:#FFF8E1;border-color:#F9A825;color:#E65100;font-weight:600}
+.loc-tab.active.esp{background:#FBE9E7;border-color:#BF360C;color:#7F1D0D;font-weight:600}
 .loc-tab.active.rapido{background:#FFF3E0;border-color:#E65100;color:#BF360C;font-weight:600}
 .tab-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
 .nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
@@ -145,7 +146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .venc-toggle-btn.active{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
 /* FAB */
 .fab{position:fixed;bottom:24px;right:20px;width:54px;height:54px;border-radius:50%;color:#fff;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:background .2s}
-.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}.fab.gstats{background:#2E7D32}.fab.super{background:#F9A825}.fab.rapido{background:#E65100}
+.fab.h{background:#378ADD}.fab.f{background:#5B63D3}.fab.d{background:#BA7517}.fab.cat{background:#3A7A1E}.fab.comp{background:#8A3A8A}.fab.chat{background:#C87820}.fab.hist{background:#6060C0}.fab.rec2{background:#E8A020}.fab.gstats{background:#2E7D32}.fab.super{background:#F9A825}.fab.esp{background:#BF360C}.fab.rapido{background:#E65100}
 /* Modals */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
 .modal-bg.open{display:flex}
@@ -232,7 +233,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.5.8</div>
+  <div class="ver">v8.5.9</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -249,6 +250,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="loc-tab hist" id="lt-hist" onclick="setLoc('hist')"><span class="loc-tab-icon">📊</span>Historial</button>
   <button class="loc-tab" id="lt-rec2" onclick="setLoc('rec2')" style="--tab-bg:#FEF3E2;--tab-border:#E8A020;--tab-color:#8A5000"><span class="loc-tab-icon">🍳</span>Recetas</button>
   <button class="loc-tab" id="lt-gstats" onclick="setLoc('gstats')"><span class="loc-tab-icon">📈</span>Stats</button>
+  <button class="loc-tab" id="lt-esp" onclick="setLoc('esp')"><span class="loc-tab-icon">🌶️</span>Especias</button>
   <button class="loc-tab" id="lt-super" onclick="setLoc('super')"><span class="loc-tab-icon">🛒</span>Del super</button>
   <button class="loc-tab" id="lt-rapido" onclick="setLoc('rapido')"><span class="loc-tab-icon">⚡</span>Rápido</button>
 </div>
@@ -448,6 +450,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span style="font-size:28px">▦</span><span>Apuntá al código de barras</span>
     </label>
   </div>
+</div>
+
+<!-- ESPECIAS -->
+<div id="sc-esp" class="screen" style="display:none">
+  <div class="search-bar">
+    <input id="espSearch" placeholder="Buscar especia..." oninput="renderEsp()" style="flex:1;font-size:14px;padding:8px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none">
+  </div>
+  <div id="espStats" style="margin-bottom:10px"></div>
+  <div id="espList"></div>
 </div>
 
 <!-- HISTORIAL -->
@@ -980,7 +991,7 @@ function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
 function setLoc(l){
   loc=l;currentCat='Todos';
-  ['h','f','d','cat','comp','chat','hist','rec2','gstats','rapido'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats','rapido','esp'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el)el.className='loc-tab '+x+(x===l?' active '+x:'');
   });
@@ -999,6 +1010,7 @@ function setLoc(l){
     else if(l==='chat'){showScreens(['chat']);renderChat();lastSeenChat=loadChat().length;localStorage.setItem('lastSeenChat',String(lastSeenChat));updateChatBadge();}
     else if(l==='hist'){showScreens(['hist']);renderHist();}
     else if(l==='gstats'){showScreens(['gstats']);renderGStats();}
+    else if(l==='esp'){showScreens(['esp']);renderEsp();}
     else if(l==='rapido'){showScreens(['rapido']);renderRapido();}
     else if(l==='super'){showScreens(['super']);renderSuperList();}
     else if(l==='rec2'){
@@ -1012,7 +1024,7 @@ function setLoc(l){
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -2073,6 +2085,70 @@ function renderGStats(){
     '<div class="card"><div class="section-lbl">Compras (30 días)</div><div style="font-size:22px;font-weight:700;color:#8A3A8A;margin-top:6px">'+comprasHechas+'</div><div style="font-size:12px;color:var(--text2)">ítems comprados</div></div>'+
     (topCons.length?'<div class="card"><div class="section-lbl">Más consumidos (30 días)</div>'+topCons.map(([n,v])=>'<div style="display:flex;align-items:center;gap:8px;margin-top:8px"><div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#1D9E75;width:'+Math.round(v/maxC*100)+'%"></div></div><div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>').join('')+'</div>':'')+
     (topCat.length?'<div class="card"><div class="section-lbl">Stock por categoría</div>'+topCat.map(([n,v])=>'<div style="display:flex;align-items:center;gap:8px;margin-top:8px"><div style="font-size:13px;color:var(--text);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden"><div style="height:100%;background:#378ADD;width:'+Math.round(v/maxCat*100)+'%"></div></div><div style="font-size:12px;color:var(--text2);min-width:30px;text-align:right">'+v.toFixed(1).replace(/\.0$/,'')+'</div></div>').join('')+'</div>':'');
+}
+
+// ESPECIAS
+function renderEsp(){
+  const q=(document.getElementById('espSearch')?.value||'').toLowerCase().trim();
+  const catalog=loadCatalog();
+  const stock=loadStock();
+  // Get all spice products from catalog
+  const especias=catalog.filter(p=>p.cat==='Especias'||(q&&p.nombre.toLowerCase().includes(q)));
+  const filtered=q?especias:catalog.filter(p=>p.cat==='Especias');
+  // Stats
+  const total=filtered.length;
+  const conStock=filtered.filter(p=>{
+    const s=stock[p.id];
+    return s&&(s.h?.qty>0||s.f?.qty>0||s.d?.qty>0);
+  }).length;
+  const sinStock=total-conStock;
+  document.getElementById('espStats').innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px">'+
+      '<div class="stat" style="background:#FBE9E7"><div class="stat-val" style="color:#BF360C">'+total+'</div><div class="stat-lbl">Total</div></div>'+
+      '<div class="stat" style="background:#EAF3DE"><div class="stat-val" style="color:#27500A">'+conStock+'</div><div class="stat-lbl">Con stock</div></div>'+
+      '<div class="stat" style="background:#F5F5F5"><div class="stat-val" style="color:#666">'+sinStock+'</div><div class="stat-lbl">Sin stock</div></div>'+
+    '</div>';
+  const el=document.getElementById('espList');
+  if(!filtered.length){
+    el.innerHTML='<div class="empty">No hay especias en el catálogo.<br>Agregá productos con categoría "Especias".</div>';
+    return;
+  }
+  // Sort: with stock first, then alphabetically
+  filtered.sort((a,b)=>{
+    const aStock=stock[a.id]&&(stock[a.id].h?.qty>0||stock[a.id].f?.qty>0||stock[a.id].d?.qty>0);
+    const bStock=stock[b.id]&&(stock[b.id].h?.qty>0||stock[b.id].f?.qty>0||stock[b.id].d?.qty>0);
+    if(aStock&&!bStock)return -1;if(!aStock&&bStock)return 1;
+    return a.nombre.localeCompare(b.nombre);
+  });
+  let out='';
+  filtered.forEach(p=>{
+    const s=stock[p.id]||{};
+    const locs=[];
+    if(s.h?.qty>0)locs.push({l:'h',icon:'🧊',qty:s.h.qty,venc:s.h.venc});
+    if(s.f?.qty>0)locs.push({l:'f',icon:'❄️',qty:s.f.qty,venc:s.f.venc});
+    if(s.d?.qty>0)locs.push({l:'d',icon:'🫙',qty:s.d.qty,venc:s.d.venc});
+    const hasStock=locs.length>0;
+    const img=p.img?('<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'):'🌶️';
+    out+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;opacity:'+(hasStock?1:0.5)+'">'+
+      '<div style="width:44px;height:44px;border-radius:10px;background:#FBE9E7;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">'+img+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div>'+
+        (hasStock?
+          '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'+locs.map(loc=>
+            '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:'+(loc.l==='h'?'#deeefb':loc.l==='f'?'#EEF0FE':'#faeeda')+';color:'+(loc.l==='h'?'#185FA5':loc.l==='f'?'#2D3490':'#633806')+'">'+
+            loc.icon+' '+loc.qty+' '+p.unidad+(loc.venc?' · '+getBadge(loc.venc):'')+
+            '</span>'
+          ).join('')+'</div>'
+          :'<div style="font-size:12px;color:var(--text3);margin-top:2px">Sin stock</div>'
+        )+
+        (p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'+
+        '<button onclick="openAssignModal(\''+p.id+'\')" style="padding:6px 10px;border:none;border-radius:8px;background:#BF360C;color:#fff;font-size:12px;font-weight:600;cursor:pointer">'+(hasStock?'✏️':'+ Agregar')+'</button>'+
+      '</div>'+
+    '</div>';
+  });
+  el.innerHTML=out;
 }
 
 // HISTORIAL
