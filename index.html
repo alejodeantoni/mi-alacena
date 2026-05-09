@@ -245,7 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.6.0</div>
+  <div class="ver">v8.6.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1496,7 +1496,6 @@ async function checkReceta(){
   catch(e){document.getElementById('recetaResults').innerHTML='<div class="empty">Error</div>';}
 }
 function agregarFaltantes(nombres){const compras=loadCompras();let n=0;nombres.forEach(nom=>{if(!compras.find(c=>c.nombre.toLowerCase()===nom.toLowerCase())){compras.push({id:Date.now().toString()+Math.random(),nombre:nom,done:false,origen:loc});n++;}});saveCompras(compras);toast(n+' ítem'+(n!==1?'s':'')+' agregado'+(n!==1?'s':''));}
-        out+='<div class="esp-dot'+(on?(warn?' warn':' on'):'')+'" onclick="setEspNivel(\''+p.id+'\','+( n===lv?0:lv)+')" title="'+(lv===1?'Poco':lv===2?'Medio':'Lleno')+'"></div>';
 // STATS
 function renderStatsPage(){
   const all=getAllStocked();const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0).length;
