@@ -23,6 +23,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ver{font-size:11px;color:var(--text3);background:var(--bg4);padding:2px 8px;border-radius:100px}
 .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
 .loc-tabs{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
+.loc-tab.dragging{opacity:0.5;border:2px dashed var(--border2)}
+.loc-tab.drag-over{border:2px solid #378ADD;background:var(--bg4)}
 .loc-tabs::-webkit-scrollbar{display:none}
 .loc-tab{flex:1;min-width:60px;padding:8px 4px;border:1px solid var(--border2);border-radius:12px;background:transparent;cursor:pointer;text-align:center;font-size:11px;color:var(--text2);transition:all .15s;position:relative}
 .loc-tab-icon{font-size:18px;display:block;margin-bottom:2px}
@@ -44,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .esp-card.poco{border-color:#E8A020;background:#FEF3E2}
 .esp-card-icon{font-size:26px;display:block;margin-bottom:3px}
 .esp-card-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.2;margin-bottom:5px}
-.esp-level{display:flex;gap:3px;justify-content:center}
+.esp-level{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
 .esp-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2)}
 .esp-dot.on{background:#BF360C;border-color:#BF360C}
 .esp-dot.warn{background:#E8A020;border-color:#E8A020}
@@ -245,7 +247,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v8.6.1</div>
+  <div class="ver">v8.6.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1558,10 +1560,27 @@ function renderShopList(){
   '</div>').join('');
 }
 function toggleShopItem(id){
-  const compras=loadCompras();const c=compras.find(x=>x.id===id);if(c){c.shopDone=!c.shopDone;if(c.shopDone)c.done=true;}
+  const compras=loadCompras();const c=compras.find(x=>x.id===id);
+  if(!c)return;
+  c.shopDone=!c.shopDone;
+  if(c.shopDone){
+    c.done=true;
+    // Auto-add to superCart
+    const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
+    if(cat&&!superCart[cat.id]){
+      superCart[cat.id]={nombre:cat.nombre,qty:1,loc:c.origen||'d',unidad:cat.unidad,catId:cat.id};
+    }
+  } else {
+    // Untick - remove from superCart
+    const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
+    if(cat)delete superCart[cat.id];
+  }
   saveCompras(compras);renderShopList();renderCompras();
   const remaining=compras.filter(x=>!x.done).length;
-  if(remaining===0)toast('🎉 ¡Compras completadas!');
+  if(remaining===0){
+    toast('🎉 ¡Compras listas! Actualizá las cantidades en Del Super');
+    setTimeout(()=>setLoc('super'),1500);
+  }
 }
 function shareCompras(){const c=loadCompras().filter(x=>!x.done);if(!c.length){toast('Lista vacía');return;}window.open('https://wa.me/?text='+encodeURIComponent('🛒 *Lista de compras*\n\n'+c.map(x=>'• '+x.nombre).join('\n')),'_blank');}
 function toggleCompra(id){const c=loadCompras();const f=c.find(x=>x.id===id);if(f){f.done=!f.done;if(f.done){addHistEntry&&null;const h=loadHist();const p=getProfile();h.unshift({id:Date.now().toString(),nombre:f.nombre,cat:'Compras',accion:'comprado',delta:1,by:p?.name||'?',byColor:p?.color||'#666',ts:new Date().toISOString(),loc:f.origen||'h'});saveHist(h);}}saveCompras(c);renderCompras();}
@@ -2145,6 +2164,14 @@ function setEspNivel(catId, nivel){
   }
   renderEsp();
 }
+// Nivel labels: 0=no tengo, 1=poco, 2=medio, 3=lleno, 4=extra lleno
+const ESP_NIVELES=[
+  {v:0,t:'✗',bg:'var(--bg4)',c:'var(--text3)',label:'Sin stock'},
+  {v:1,t:'poco',bg:'#FEF3E2',c:'#E8A020',label:'Poco'},
+  {v:2,t:'medio',bg:'#EAF3DE',c:'#1D9E75',label:'Medio'},
+  {v:3,t:'lleno',bg:'#deeefb',c:'#185FA5',label:'Lleno'},
+  {v:4,t:'lleno+',bg:'#EAF3DE',c:'#27500A',label:'Lleno+'}
+];
 
 function renderEsp(){
   const q=(document.getElementById('espSearch')?.value||'').toLowerCase().trim();
@@ -2188,11 +2215,12 @@ function renderEsp(){
       else{const ico=document.createElement('span');ico.className='esp-card-icon';ico.textContent='🌶️';card.appendChild(ico);}
       const nm=document.createElement('div');nm.className='esp-card-name';nm.textContent=p.nombre;card.appendChild(nm);
       const lvl=document.createElement('div');lvl.className='esp-level';
-      [1,2,3].forEach(lv=>{
+      [1,2,3,4].forEach(lv=>{
         const dot=document.createElement('div');
         const on=n>=lv;const warn=n===1&&lv===1;
         dot.className='esp-dot'+(on?(warn?' warn':' on'):'');
-        dot.title=lv===1?'Poco':lv===2?'Medio':'Lleno';
+        const titles=['','Poco','Medio','Lleno','Lleno+'];
+        dot.title=titles[lv]||'';
         dot.onclick=(function(id,cur,v){return function(){setEspNivel(id,cur===v?0:v);};})(p.id,n,lv);
         lvl.appendChild(dot);
       });
@@ -2214,7 +2242,7 @@ function renderEsp(){
       if(e.apertura){const ap=document.createElement('div');ap.style.cssText='font-size:11px;color:var(--text3)';ap.textContent='desde '+fmtDay(e.apertura);info.appendChild(ap);}
       row.appendChild(info);
       const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px';
-      [{v:0,t:'✗',bg:'var(--bg4)',c:'var(--text3)'},{v:1,t:'poco',bg:'#FEF3E2',c:'#E8A020'},{v:2,t:'medio',bg:'#EAF3DE',c:'#1D9E75'},{v:3,t:'lleno',bg:'#deeefb',c:'#185FA5'}].forEach(opt=>{
+      ESP_NIVELES.forEach(opt=>{
         const b=document.createElement('button');
         b.style.cssText='padding:4px 8px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:'+(n===opt.v?opt.bg:'var(--bg4)')+';color:'+(n===opt.v?opt.c:'var(--text3)');
         b.textContent=opt.t;
@@ -2320,6 +2348,32 @@ function showCfgStatus(msg,bg,color){
 }
 function openImgViewer(src){const bg=document.getElementById("imgViewerBg");document.getElementById("imgViewerImg").src=src;bg.style.display="flex";}
 function closeImgViewer(){document.getElementById("imgViewerBg").style.display="none";}
+function initTabDrag(){
+  const tabs=document.querySelector('.loc-tabs');
+  if(!tabs)return;
+  let dragging=null;
+  tabs.querySelectorAll('.loc-tab').forEach(tab=>{
+    tab.draggable=true;
+    tab.addEventListener('dragstart',e=>{dragging=tab;tab.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    tab.addEventListener('dragend',()=>{dragging=null;tabs.querySelectorAll('.loc-tab').forEach(t=>t.classList.remove('dragging','drag-over'));saveTabOrder();});
+    tab.addEventListener('dragover',e=>{e.preventDefault();if(dragging&&dragging!==tab){tab.classList.add('drag-over');const rect=tab.getBoundingClientRect();const mid=rect.left+rect.width/2;if(e.clientX<mid)tabs.insertBefore(dragging,tab);else tabs.insertBefore(dragging,tab.nextSibling);}});
+    tab.addEventListener('dragleave',()=>tab.classList.remove('drag-over'));
+    tab.addEventListener('drop',e=>{e.preventDefault();tab.classList.remove('drag-over');});
+  });
+  // Restore saved order
+  const saved=localStorage.getItem('tab_order');
+  if(saved){
+    try{
+      const order=JSON.parse(saved);
+      order.forEach(id=>{const el=document.getElementById(id);if(el)tabs.appendChild(el);});
+    }catch(e){}
+  }
+}
+function saveTabOrder(){
+  const tabs=document.querySelector('.loc-tabs');
+  const order=[...tabs.querySelectorAll('.loc-tab')].map(t=>t.id);
+  localStorage.setItem('tab_order',JSON.stringify(order));
+}
 function toast(msg){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='toast';el.textContent=msg;wrap.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},2200);}
 
 // Clean up bad stockMin data on load (stockMin set on locations with qty=0)
@@ -2350,6 +2404,7 @@ if(!profile){
 }
 setLoc('h');
 renderNotifBanner();
+initTabDrag();
 window.addEventListener('load',()=>{setTimeout(pullFromCloud,800);});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 // Poll for chat updates every 30s
