@@ -246,6 +246,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Smart list alert */
 .smart-alert{background:#FAEEDA;border:1px solid #FAC775;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#633806;display:flex;align-items:center;gap:8px}
 .smart-alert button{margin-left:auto;padding:5px 12px;border:1px solid #BA7517;border-radius:8px;background:transparent;color:#633806;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap}
+
+.misrec-card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;transition:box-shadow .15s}
+.misrec-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.misrec-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.misrec-color-bar{width:4px;min-height:40px;border-radius:2px;flex-shrink:0;align-self:stretch}
+.misrec-header-info{flex:1;min-width:0}
+.misrec-title{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.misrec-meta{font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.misrec-status{font-size:11px;padding:2px 8px;border-radius:100px;font-weight:600;white-space:nowrap}
+.misrec-status.ok{background:#EAF3DE;color:#27500A}
+.misrec-status.falta{background:#FCEBEB;color:#791F1F}
+.misrec-status.parcial{background:#FAEEDA;color:#633806}
+.misrec-chevron{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0;margin-left:4px}
+.misrec-chevron.open{transform:rotate(180deg)}
+.misrec-body{padding:0 16px 16px;display:none;border-top:1px solid var(--bg4)}
+.misrec-body.open{display:block}
+.misrec-ing-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg4);font-size:13px}
+.misrec-ing-row:last-child{border-bottom:none}
+.misrec-badge-si{font-size:11px;padding:2px 8px;border-radius:100px;background:#EAF3DE;color:#27500A;font-weight:500;flex-shrink:0}
+.misrec-badge-no{font-size:11px;padding:2px 8px;border-radius:100px;background:#FCEBEB;color:#791F1F;font-weight:500;flex-shrink:0}
+.misrec-steps{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-line;margin-top:6px}
+.misrec-tip{margin-top:10px;padding:10px 12px;background:#FEF3E2;border-left:3px solid #E8A020;border-radius:0 8px 8px 0;font-size:12px;color:#7A4010}
+.sub-tab.active.misrec{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
 </style>
 </head>
 <body>
@@ -268,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.1</div>
+  <div class="ver">v9.2.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2663,22 +2686,39 @@ function renderMisRecetas(){
     const sc=checkStockParaReceta(r.ingredientes||[]);
     const ok=sc.every(s=>s.tengo);
     const faltan=sc.filter(s=>!s.tengo).length;
+    // Color bar based on status
+    const barColor=ok?'#1D9E75':faltan>0?'#E24B4A':'#E8A020';
+    const statusCls=ok?'ok':faltan>0?'falta':'parcial';
+    const statusTxt=ok?'✅ Podés hacerla':faltan===sc.length?'❌ Faltan todos':'⚠️ Faltan '+faltan;
     const card=document.createElement('div');card.className='misrec-card';
     const hdr=document.createElement('div');hdr.className='misrec-header';
-    hdr.onclick=function(){card.querySelector('.misrec-body').classList.toggle('open');};
-    const info=document.createElement('div');info.style.flex='1';
+    // Color bar
+    const bar=document.createElement('div');bar.className='misrec-color-bar';bar.style.background=barColor;
+    hdr.appendChild(bar);
+    // Info
+    const info=document.createElement('div');info.className='misrec-header-info';
     info.innerHTML='<div class="misrec-title">'+r.nombre+'</div><div class="misrec-meta">'+
       (r.porciones?'<span>👥 '+r.porciones+'</span>':'')+
       (r.tiempo?'<span>⏱️ '+r.tiempo+'</span>':'')+
-      '<span style="color:'+(ok?'#27500A':faltan>0?'#791F1F':'#BA7517')+';font-weight:600">'+
-      (ok?'✅ Podés hacerla':'❌ Faltan '+faltan)+'</span></div>';
+      '<span class="misrec-status '+statusCls+'">'+statusTxt+'</span></div>';
+    hdr.appendChild(info);
+    // Buttons
     const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
     const eb=document.createElement('button');eb.className='icon-btn';eb.textContent='✏️';
     eb.onclick=function(e){e.stopPropagation();abrirNuevaReceta(r);};
     const db=document.createElement('button');db.className='icon-btn';db.style.color='#A32D2D';db.textContent='🗑';
     db.onclick=(function(id){return function(e){e.stopPropagation();eliminarReceta(id);};})(r.id);
     btns.appendChild(eb);btns.appendChild(db);
-    hdr.appendChild(info);hdr.appendChild(btns);card.appendChild(hdr);
+    // Chevron
+    const chev=document.createElement('div');chev.className='misrec-chevron';chev.textContent='▼';
+    btns.appendChild(chev);
+    hdr.appendChild(btns);
+    hdr.onclick=function(){
+      const body=card.querySelector('.misrec-body');
+      body.classList.toggle('open');
+      chev.classList.toggle('open');
+    };
+    card.appendChild(hdr);
     const body=document.createElement('div');body.className='misrec-body';
     if(r.ingredientes&&r.ingredientes.length){
       const t=document.createElement('div');t.className='section-lbl';t.textContent='Ingredientes';body.appendChild(t);
@@ -2699,12 +2739,12 @@ function renderMisRecetas(){
       }
     }
     if(r.pasos&&r.pasos.length){
-      const pt=document.createElement('div');pt.className='section-lbl';pt.style.marginTop='10px';pt.textContent='Preparación';body.appendChild(pt);
-      const pd=document.createElement('div');pd.className='receta-body';
+      const pt=document.createElement('div');pt.className='section-lbl';pt.style.marginTop='12px';pt.textContent='Preparación';body.appendChild(pt);
+      const pd=document.createElement('div');pd.className='misrec-steps';
       pd.textContent=r.pasos.map(function(p,i){return (i+1)+'. '+p;}).join('\n');body.appendChild(pd);
     }
     if(r.notas){
-      const nd=document.createElement('div');nd.style.cssText='margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2)';
+      const nd=document.createElement('div');nd.className='misrec-tip';
       nd.textContent='💡 '+r.notas;body.appendChild(nd);
     }
     card.appendChild(body);el.appendChild(card);
