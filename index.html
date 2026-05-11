@@ -1154,6 +1154,7 @@ function setLoc(l){
       if(selectedIngredients.size===0)selectAllIngredients(true);
       renderRec2();
     }
+    else if(l==='misrec'){showScreens(['misrec']);renderMisRecetas();}
   }
   if(invLocs.includes(l))renderAll();
 }
