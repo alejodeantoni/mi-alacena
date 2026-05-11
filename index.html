@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.0.4</div>
+  <div class="ver">v9.0.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1625,14 +1625,40 @@ function renderCompras(){
   el.innerHTML=compras.map(c=>'<div class="compra-item"><div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div><span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+(c.auto?' <span style="font-size:10px;color:var(--text3)">auto</span>':'')+'</span><span class="badge-lugar '+(c.origen||'h')+'">'+(c.origen==='d'?'🫙':c.origen==='f'?'❄️':'🧊')+'</span><button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button></div>').join('');
 }
 function renderShopList(){
-  const compras=loadCompras().filter(c=>!c.done);
+  const compras=loadCompras();
   const el=document.getElementById('shopList');
-  if(!compras.length){el.innerHTML='<div class="empty">¡Lista vacía! Todo comprado.</div>';return;}
-  el.innerHTML=compras.map(c=>'<div class="shop-item'+(c.shopDone?' bought':'')+'" onclick="toggleShopItem(\''+c.id+'\')">'+
-    '<div class="shop-item-icon" style="background:'+(COLORS['Otros']||'#F1EFE8')+'">'+(ALL_CATS['Otros']||'📦')+'</div>'+
-    '<div class="shop-item-name">'+c.nombre+'</div>'+
-    '<div class="shop-check'+(c.shopDone?' done':'')+'">'+(c.shopDone?'✓':'')+'</div>'+
-  '</div>').join('');
+  el.innerHTML='';
+  if(!compras.length){el.innerHTML='<div class="empty">La lista de compras está vacía.</div>';return;}
+  const pending=compras.filter(c=>!c.shopDone);
+  const done=compras.filter(c=>c.shopDone);
+  const catalog=loadCatalog();
+  function makeShopItem(c,isDone){
+    const nombreBase=c.nombre.replace(/\s*\(x[\d.]+[^)]*\)/,'').trim();
+    const cat=catalog.find(p=>p.nombre===nombreBase);
+    const div=document.createElement('div');
+    div.className='shop-item'+(isDone?' bought':'');
+    div.onclick=(function(id){return function(){toggleShopItem(id);};})(c.id);
+    const iconDiv=document.createElement('div');
+    iconDiv.className='shop-item-icon';
+    iconDiv.style.background=isDone?'var(--bg4)':(COLORS[cat?.cat]||'#F1EFE8');
+    if(cat?.img){const img=document.createElement('img');img.src=cat.img;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';iconDiv.appendChild(img);}
+    else{iconDiv.textContent=ALL_CATS[cat?.cat]||'📦';}
+    const nm=document.createElement('div');nm.className='shop-item-name';
+    nm.textContent=c.nombre;
+    if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
+    const chk=document.createElement('div');chk.className='shop-check'+(isDone?' done':'');
+    chk.textContent=isDone?'✓':'';
+    div.appendChild(iconDiv);div.appendChild(nm);div.appendChild(chk);
+    return div;
+  }
+  pending.forEach(c=>el.appendChild(makeShopItem(c,false)));
+  if(done.length){
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:11px;color:var(--text3);font-weight:600;margin:10px 0 6px;text-transform:uppercase';
+    lbl.textContent='Comprado ('+done.length+')';
+    el.appendChild(lbl);
+    done.forEach(c=>el.appendChild(makeShopItem(c,true)));
+  }
 }
 function toggleShopItem(id){
   const compras=loadCompras();const c=compras.find(x=>x.id===id);
@@ -1641,7 +1667,8 @@ function toggleShopItem(id){
   if(c.shopDone){
     c.done=true;
     // Add to superCart
-    const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
+    const nombreBase=c.nombre.replace(/\s*\(x[\d.]+[^)]*\)/,'').trim();
+    const cat=loadCatalog().find(p=>p.nombre===nombreBase||p.nombre===c.nombre.split(' (')[0]);
     if(cat){
       superCart=loadSuperCart(); // refresh from session
       if(!superCart[cat.id]){
@@ -1680,9 +1707,11 @@ function toggleCompra(id){
       saveHist(h);
       // Add to superCart
       const cat=loadCatalog().find(p=>p.nombre===f.nombre.split(' (')[0]);
-      superCart=loadSuperCart();
-      if(cat&&!superCart[cat.id]){
-        superCart[cat.id]={nombre:cat.nombre,qty:1,loc:f.origen||'d',unidad:cat.unidad,catId:cat.id};
+      const nombreBase2=f.nombre.replace(/\s*\(x[\d.]+[^)]*\)/,'').trim();
+    const catItem=loadCatalog().find(p=>p.nombre===nombreBase2||p.nombre===f.nombre.split(' (')[0]);
+    superCart=loadSuperCart();
+      if(catItem&&!superCart[catItem.id]){
+        superCart[catItem.id]={nombre:catItem.nombre,qty:1,loc:f.origen||'d',unidad:catItem.unidad,catId:catItem.id};
         saveSuperCart(superCart);
         toast('✓ Agregado a Del Super');
       }
