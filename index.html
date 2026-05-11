@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.0.0</div>
+  <div class="ver">v9.0.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1084,7 +1084,12 @@ function setLoc(l){
     else if(l==='gstats'){showScreens(['gstats']);renderGStats();}
     else if(l==='esp'){showScreens(['esp']);renderEsp();}
     else if(l==='rapido'){showScreens(['rapido']);renderRapido();}
-    else if(l==='super'){showScreens(['super']);renderSuperList();}
+    else if(l==='super'){
+      superCart=loadSuperCart();
+      showScreens(['super']);
+      renderSuperList();
+      renderSuperCart();
+    }
     else if(l==='rec2'){
       showScreens(['rec2']);
       // Select all by default on first open
@@ -1636,11 +1641,12 @@ function toggleShopItem(id){
     const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
     if(cat&&!superCart[cat.id]){
       superCart[cat.id]={nombre:cat.nombre,qty:1,loc:c.origen||'d',unidad:cat.unidad,catId:cat.id};
+      saveSuperCart(superCart);
     }
   } else {
     // Untick - remove from superCart
     const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
-    if(cat)delete superCart[cat.id];
+    if(cat){delete superCart[cat.id];saveSuperCart(superCart);}
   }
   saveCompras(compras);renderShopList();renderCompras();
   const remaining=compras.filter(x=>!x.done).length;
@@ -1793,6 +1799,9 @@ async function checkReceta2(){
 }
 
 // RAPIDO
+function loadSuperCart(){try{return JSON.parse(sessionStorage.getItem('superCart')||'{}');}catch(e){return{};}}
+function saveSuperCart(c){sessionStorage.setItem('superCart',JSON.stringify(c));}
+let superCart=loadSuperCart();
 let cocinandoQtys={};
 
 function renderRapido(){
@@ -1849,6 +1858,7 @@ function addToSuperCart(catId){
   } else {
     superCart[catId]={nombre:cat.nombre,qty:1,loc:'d',unidad:cat.unidad,catId};
   }
+  saveSuperCart(superCart);
   renderSuperList();
   renderSuperCart();
 }
@@ -1878,6 +1888,7 @@ function renderSuperCart(){
 
 function removeFromSuperCart(catId){
   delete superCart[catId];
+  saveSuperCart(superCart);
   renderSuperList();
   renderSuperCart();
 }
@@ -1898,6 +1909,7 @@ function confirmarCompra(){
   });
   saveStock(stock);
   superCart={};
+  saveSuperCart({});
   renderSuperCart();
   renderSuperList();
   renderAll();
@@ -2481,4 +2493,6 @@ setInterval(scheduleVencNotifications, 3600000);
 setTimeout(scheduleVencNotifications, 5000);
 </script>
 </body>
-</html>
+</html>function loadSuperCart(){try{return JSON.parse(sessionStorage.getItem('superCart')||'{}');}catch(e){return{};}}
+function saveSuperCart(c){sessionStorage.setItem('superCart',JSON.stringify(c));}
+
