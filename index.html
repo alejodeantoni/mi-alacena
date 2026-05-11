@@ -1114,7 +1114,7 @@ function setMainTab(tab){
 function setLoc(l){
   loc=l;currentCat='Todos';
   // Update sub-tab active states
-  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp','misrec'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el){
       el.classList.toggle('active',x===l);
