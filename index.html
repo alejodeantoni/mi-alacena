@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.0</div>
+  <div class="ver">v9.2.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -530,6 +530,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="modal">
   <div class="modal-drag"></div>
   <div class="modal-header"><div class="modal-title" id="misrecModalTitle">Nueva receta</div></div>
+  <div class="field">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <label style="margin-bottom:0">📋 Pegar texto de receta</label>
+      <span style="font-size:11px;color:var(--text3)">La IA la parsea automáticamente</span>
+    </div>
+    <textarea id="misrecTextoLibre" style="height:80px;font-size:13px" placeholder="Pegá cualquier texto con la receta y tocá ✨ Analizar..."></textarea>
+    <button onclick="analizarTextoReceta()" id="btnAnalizarReceta" style="width:100%;margin-top:6px;padding:9px;border:none;border-radius:10px;background:#E8A020;color:#fff;font-size:13px;font-weight:600;cursor:pointer">✨ Analizar con IA</button>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin:8px 0">— o completá manualmente —</div>
+  </div>
   <div class="field"><label>Nombre</label><input id="misrecNombre" placeholder="Ej: Milanesas napolitanas"/></div>
   <div class="row2">
     <div class="field"><label>Porciones</label><input id="misrecPorciones" type="number" min="1" value="4"/></div>
@@ -2564,6 +2573,32 @@ function abrirNuevaReceta(receta){
   document.getElementById('misrecModalBg').classList.add('open');
 }
 function cerrarNuevaReceta(){document.getElementById('misrecModalBg').classList.remove('open');}
+
+async function analizarTextoReceta(){
+  const texto=document.getElementById('misrecTextoLibre').value.trim();
+  if(!texto){toast('Pegá el texto de la receta primero');return;}
+  const btn=document.getElementById('btnAnalizarReceta');
+  btn.disabled=true;btn.textContent='Analizando...';
+  try{
+    const prompt='Analizá este texto de receta y extraé la información.\nTexto: '+texto+'\n\nRespondé SOLO en JSON sin backticks:\n{"nombre":"...","porciones":4,"tiempo":"...","ingredientes":["200g harina","2 huevos"],"pasos":["paso 1","paso 2"],"notas":"..."}';
+    let result;
+    try{result=await callGeminiText(prompt);}
+    catch(e){result=await callGroq(prompt);}
+    const r=JSON.parse(result.replace(/```json|```/g,'').trim());
+    // Fill in the form
+    if(r.nombre)document.getElementById('misrecNombre').value=r.nombre;
+    if(r.porciones)document.getElementById('misrecPorciones').value=r.porciones;
+    if(r.tiempo)document.getElementById('misrecTiempo').value=r.tiempo;
+    if(r.ingredientes)document.getElementById('misrecIngredientes').value=(r.ingredientes||[]).join('\n');
+    if(r.pasos)document.getElementById('misrecPasos').value=(r.pasos||[]).join('\n');
+    if(r.notas)document.getElementById('misrecNotas').value=r.notas;
+    document.getElementById('misrecTextoLibre').value='';
+    toast('✅ Receta reconocida! Revisá y guardá.');
+  }catch(e){
+    toast('Error al analizar: '+(e.message||'revisá tu API key'));
+  }
+  btn.disabled=false;btn.textContent='✨ Analizar con IA';
+}
 
 function guardarMisReceta(){
   const nombre=document.getElementById('misrecNombre').value.trim();
