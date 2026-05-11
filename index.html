@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.9</div>
+  <div class="ver">v9.3.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -734,7 +734,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="loc-assign-row"><div class="loc-assign-icon">❄️</div><div class="loc-assign-name">Freezer</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('f',-1)">−</button><input class="qty-input" id="aqf" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('f',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('f',1)">+</button></div></div>
     <div class="loc-assign-row"><div class="loc-assign-icon">🫙</div><div class="loc-assign-name">Despensa</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('d',-1)">−</button><input class="qty-input" id="aqd" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('d',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('d',1)">+</button></div></div>
   </div>
-  <div class="field" style="margin-top:12px"><label>Fecha de vencimiento (opcional)</label><input type="date" id="assignVenc"></div>
+  <div class="field" style="margin-top:12px">
+    <label>Fecha de vencimiento (opcional)</label>
+    <input type="date" id="assignVenc" style="margin-bottom:8px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button onclick="setVencDays(7)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">7d</button>
+      <button onclick="setVencDays(15)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">15d</button>
+      <button onclick="setVencDays(30)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">1 mes</button>
+      <button onclick="setVencDays(60)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">2 meses</button>
+      <button onclick="setVencDays(90)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">3 meses</button>
+      <button onclick="setVencDays(180)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">6 meses</button>
+      <button onclick="setVencDays(365)" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer">1 año</button>
+      <button onclick="document.getElementById('assignVenc').value=''" style="padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text3);font-size:12px;cursor:pointer">✕</button>
+    </div>
+  </div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
   <div class="field" id="tupperField" style="display:none">
     <label>Tupper # <span style="font-size:11px;color:var(--text3)">(posición en el freezer)</span></label>
@@ -1413,6 +1426,9 @@ function openAssignModal(catId){
   }
   const ads=document.getElementById('abiertoDateSuggest');if(ads)ads.style.display='none';
   document.getElementById('assignModalBg').classList.add('open');
+}
+function setVencDays(days){
+  document.getElementById('assignVenc').value=addDays(days);
 }
 function applyAiDate(){
   if(!aiSuggestedDate)return;
