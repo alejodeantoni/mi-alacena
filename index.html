@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.3</div>
+  <div class="ver">v9.2.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2666,21 +2666,30 @@ function guardarRecetaDesdeIA(nombre,ingredientes,pasos,tip){
 
 function checkStockParaReceta(ingredientes){
   const allStock=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase());
-  return ingredientes.map(ing=>{
-    // Strip quantity/units: "250g de harina 0000" -> "harina 0000"
-    const nombre=ing
-      .replace(/^[\d.,]+\s*(g|kg|ml|l|cdas?\.?|cda\.?|taza|pizca|unid|u\.?)?\s*(de\s+)?/i,'')
-      .toLowerCase().trim();
-    // Try multiple matching strategies
-    const palabras=nombre.split(/\s+/).filter(p=>p.length>3);
-    const tengo=allStock.some(s=>{
-      // Exact or contains
-      if(s.includes(nombre)||nombre.includes(s))return true;
-      // Any significant word matches
-      return palabras.some(p=>s.includes(p));
-    });
-    return{ing,tengo};
-  });
+
+  function stripCantidad(texto){
+    return texto
+      .toLowerCase()
+      .replace(/^[\d.,\/\s]+(g|kg|ml|l|cc|cdas?\.?|pizca|taza|unid|u\.?)?\s*(de\s+)?/i,'')
+      .replace(/\s*(fría|frío|entero|entera|rallad[ao]|picad[ao]|en\s+\w+)\s*$/i,'')
+      .trim();
+  }
+
+  function matchIngrediente(ing, stock){
+    const ingClean=stripCantidad(ing);
+    // 1. Exact match
+    if(stock.includes(ingClean))return true;
+    // 2. Stock item contained in ingredient name
+    if(stock.some(s=>ingClean.includes(s)))return true;
+    // 3. Ingredient name contained in stock item
+    if(stock.some(s=>s.includes(ingClean)))return true;
+    // 4. Match by main noun (first meaningful word, min 4 chars)
+    const palabras=ingClean.split(/[\s,]+/).filter(p=>p.length>=4 && !['para','con','sin','una','uno','dos','tres','media'].includes(p));
+    if(palabras.length>0 && stock.some(s=>palabras.some(p=>s.includes(p)||p.includes(s.split(' ')[0]))))return true;
+    return false;
+  }
+
+  return ingredientes.map(ing=>({ing, tengo:matchIngrediente(ing,allStock)}));
 }
 
 function renderMisRecetas(){
