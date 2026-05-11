@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.8</div>
+  <div class="ver">v9.2.9</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -694,6 +694,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="field"><label>Recordatorio (días antes del vencimiento)</label>
     <select id="ecReminder"><option value="0">Sin recordatorio</option><option value="1">1 día antes</option><option value="2">2 días antes</option><option value="3">3 días antes</option><option value="5">5 días antes</option><option value="7">1 semana antes</option></select>
+  </div>
+  <div class="field"><label>¿Dónde se compra?</label>
+    <select id="ecTienda">
+      <option value="">Automático (por categoría)</option>
+      <option value="supermercado">🛒 Supermercado</option>
+      <option value="verdulería">🥦 Verdulería</option>
+      <option value="dietética">🌾 Dietética</option>
+      <option value="carnicería">🥩 Carnicería</option>
+      <option value="otro">📦 Otro</option>
+    </select>
   </div>
   <button class="btn-primary" onclick="saveEditCatalog()">Guardar</button>
   <button class="btn-danger" onclick="deleteCatalogItem()">Eliminar del catálogo</button>
@@ -1353,7 +1363,7 @@ function renderCatalog(){
   el.innerHTML=items.map(p=>{
     const s=stock[p.id]||{};const locs=[];
     if(s.h&&s.h.qty>0)locs.push('🧊'+s.h.qty);if(s.f&&s.f.qty>0)locs.push('❄️'+s.f.qty);if(s.d&&s.d.qty>0)locs.push('🫙'+s.d.qty);
-    return '<div class="cat-product-card"><div class="item-icon" style="background:'+(COLORS[p.cat]||'#F1EFE8')+';width:44px;height:44px;font-size:22px">'+(p.img?'<img src="'+p.img+'" alt="">':(ALL_CATS[p.cat]||'📦'))+'</div><div class="cat-product-info"><div class="cat-product-name">'+p.nombre+'</div><div class="cat-product-sub">'+p.cat+(locs.length?' · '+locs.join(' '):'')+(p.reminder>0?' · 🔔'+p.reminder+'d':'')+'</div>'+(p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+'</div><div class="cat-product-actions"><button class="icon-btn" onclick="openAssignModal(\''+p.id+'\')">📍</button><button class="icon-btn" onclick="openEditCatModal(\''+p.id+'\')">✏️</button></div></div>';
+    const tiendaIcon=p.tienda?TIENDA_ICON[p.tienda]||'📦':'';return '<div class="cat-product-card"><div class="item-icon" style="background:'+(COLORS[p.cat]||'#F1EFE8')+';width:44px;height:44px;font-size:22px">'+(p.img?'<img src="'+p.img+'" alt="">':(ALL_CATS[p.cat]||'📦'))+'</div><div class="cat-product-info"><div class="cat-product-name">'+p.nombre+'</div><div class="cat-product-sub">'+p.cat+(locs.length?' · '+locs.join(' '):'')+(p.tienda?' · '+tiendaIcon+' '+p.tienda:'')+(p.reminder>0?' · 🔔'+p.reminder+'d':'')+'</div>'+(p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+'</div><div class="cat-product-actions"><button class="icon-btn" onclick="openAssignModal(\''+p.id+'\')">📍</button><button class="icon-btn" onclick="openEditCatModal(\''+p.id+'\')">✏️</button></div></div>';
   }).join('');
 }
 function setCatCatFilter(c){catCatFilter=c;renderCatalog();}
@@ -1551,6 +1561,7 @@ function openEditCatModal(id){
   document.getElementById('ecNombre').value=p.nombre;document.getElementById('ecCat').value=p.cat;
   document.getElementById('ecUnidad').value=p.unidad||'unid';document.getElementById('ecNota').value=p.nota||'';
   document.getElementById('ecReminder').value=p.reminder||0;
+  document.getElementById('ecTienda').value=p.tienda||'';
   // Load existing photo
   currentEditCatImg=p.img||null;
   const prev=document.getElementById('ecImgPreview');
@@ -1564,6 +1575,7 @@ function saveEditCatalog(){
   cat[idx].cat=document.getElementById('ecCat').value;cat[idx].unidad=document.getElementById('ecUnidad').value;
   cat[idx].nota=document.getElementById('ecNota').value.trim()||null;
   cat[idx].reminder=parseInt(document.getElementById('ecReminder').value)||0;
+  cat[idx].tienda=document.getElementById('ecTienda').value||null;
   if(currentEditCatImg!==undefined)cat[idx].img=currentEditCatImg;
   saveCatalog(cat);closeEditCatModal();renderCatalog();renderAll();toast('Guardado');
 }
@@ -1758,7 +1770,8 @@ function renderShopListByTienda(){
   compras.forEach(c=>{
     const prod=catalog.find(p=>p.nombre===c.nombre.split(' (')[0]);
     const cat=prod?.cat||'Otros';
-    const tienda=c.tienda||TIENDA_CAT[cat]||'supermercado';
+    const prod2=catalog.find(p=>p.nombre===c.nombre.split(' (')[0]);
+    const tienda=c.tienda||prod2?.tienda||TIENDA_CAT[cat]||'supermercado';
     if(!porTienda[tienda])porTienda[tienda]=[];
     porTienda[tienda].push(c);
   });
