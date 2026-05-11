@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.0.2</div>
+  <div class="ver">v9.0.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1089,6 +1089,9 @@ function setLoc(l){
       showScreens(['super']);
       renderSuperList();
       renderSuperCart();
+      // Show cart immediately if has items
+      const card=document.getElementById('superCartCard');
+      if(card&&Object.keys(superCart).length>0)card.style.display='block';
     }
     else if(l==='rec2'){
       showScreens(['rec2']);
@@ -1637,22 +1640,32 @@ function toggleShopItem(id){
   c.shopDone=!c.shopDone;
   if(c.shopDone){
     c.done=true;
-    // Auto-add to superCart
+    // Add to superCart
     const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
-    if(cat&&!superCart[cat.id]){
-      superCart[cat.id]={nombre:cat.nombre,qty:1,loc:c.origen||'d',unidad:cat.unidad,catId:cat.id};
-      saveSuperCart(superCart);
+    if(cat){
+      superCart=loadSuperCart(); // refresh from session
+      if(!superCart[cat.id]){
+        superCart[cat.id]={nombre:cat.nombre,qty:1,loc:c.origen||'d',unidad:cat.unidad,catId:cat.id};
+        saveSuperCart(superCart);
+      }
     }
   } else {
-    // Untick - remove from superCart
     const cat=loadCatalog().find(p=>p.nombre===c.nombre.split(' (')[0]);
-    if(cat){delete superCart[cat.id];saveSuperCart(superCart);}
+    if(cat){
+      superCart=loadSuperCart();
+      delete superCart[cat.id];
+      saveSuperCart(superCart);
+    }
   }
   saveCompras(compras);renderShopList();renderCompras();
+  // Show how many items in cart
+  const cartCount=Object.keys(loadSuperCart()).length;
   const remaining=compras.filter(x=>!x.done).length;
   if(remaining===0){
-    toast('🎉 ¡Compras listas! Actualizá las cantidades en Del Super');
-    setTimeout(()=>setLoc('super'),1500);
+    toast('🎉 ¡Listo! Yendo a Del Super...');
+    setTimeout(()=>{setMainTab('compras');setLoc('super');},1200);
+  } else if(cartCount>0){
+    toast('✓ '+cartCount+' ítem'+(cartCount!==1?'s':'')+' en Del Super');
   }
 }
 function shareCompras(){const c=loadCompras().filter(x=>!x.done);if(!c.length){toast('Lista vacía');return;}window.open('https://wa.me/?text='+encodeURIComponent('🛒 *Lista de compras*\n\n'+c.map(x=>'• '+x.nombre).join('\n')),'_blank');}
@@ -1667,9 +1680,11 @@ function toggleCompra(id){
       saveHist(h);
       // Add to superCart
       const cat=loadCatalog().find(p=>p.nombre===f.nombre.split(' (')[0]);
+      superCart=loadSuperCart();
       if(cat&&!superCart[cat.id]){
         superCart[cat.id]={nombre:cat.nombre,qty:1,loc:f.origen||'d',unidad:cat.unidad,catId:cat.id};
         saveSuperCart(superCart);
+        toast('✓ Agregado a Del Super');
       }
     } else {
       // Untick - remove from superCart
