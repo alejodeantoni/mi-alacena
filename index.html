@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.5</div>
+  <div class="ver">v9.3.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1395,7 +1395,7 @@ function renderCatalog(){
   el.innerHTML=items.map(p=>{
     const s=stock[p.id]||{};const locs=[];
     if(s.h&&s.h.qty>0)locs.push('🧊'+s.h.qty);if(s.f&&s.f.qty>0)locs.push('❄️'+s.f.qty);if(s.d&&s.d.qty>0)locs.push('🫙'+s.d.qty);
-    const tiendaIcon=p.tienda?TIENDA_ICON[p.tienda]||'📦':'';return '<div class="cat-product-card"><div class="item-icon" style="background:'+(COLORS[p.cat]||'#F1EFE8')+';width:44px;height:44px;font-size:22px">'+(p.img?'<img src="'+p.img+'" alt="">':(ALL_CATS[p.cat]||'📦'))+'</div><div class="cat-product-info"><div class="cat-product-name">'+p.nombre+'</div><div class="cat-product-sub">'+p.cat+(locs.length?' · '+locs.join(' '):'')+(p.tienda?' · '+tiendaIcon+' '+p.tienda:'')+(p.reminder>0?' · 🔔'+p.reminder+'d':'')+'</div>'+(p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+'</div><div class="cat-product-actions"><button class="icon-btn" onclick="openAssignModal(\''+p.id+'\')">📍</button><button class="icon-btn" onclick="openEditCatModal(\''+p.id+'\')">✏️</button></div></div>';
+    const tiendaIcon=p.tienda?TIENDA_ICON[p.tienda]||'📦':'';return '<div class="cat-product-card"><div class="item-icon" style="background:'+(COLORS[p.cat]||'#F1EFE8')+';width:44px;height:44px;font-size:22px">'+(p.img?'<img src="'+p.img+'" alt="">':(p.emoji||ALL_CATS[p.cat]||'📦'))+'</div><div class="cat-product-info"><div class="cat-product-name">'+p.nombre+'</div><div class="cat-product-sub">'+p.cat+(locs.length?' · '+locs.join(' '):'')+(p.tienda?' · '+tiendaIcon+' '+p.tienda:'')+(p.reminder>0?' · 🔔'+p.reminder+'d':'')+'</div>'+(p.nota?'<div style="font-size:11px;color:var(--text3);margin-top:2px">📝 '+p.nota+'</div>':'')+'</div><div class="cat-product-actions"><button class="icon-btn" onclick="openAssignModal(\''+p.id+'\')">📍</button><button class="icon-btn" onclick="openEditCatModal(\''+p.id+'\')">✏️</button></div></div>';
   }).join('');
 }
 function setCatCatFilter(c){catCatFilter=c;renderCatalog();}
