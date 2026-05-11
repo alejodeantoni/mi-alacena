@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.0.8</div>
+  <div class="ver">v9.1.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -410,6 +410,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div id="rec2IngList" style="max-height:280px;overflow-y:auto"></div>
       <button class="btn-primary" style="background:#E8A020;margin-top:12px" onclick="sugerirRecetasAll()" id="btnSugerirAll">✨ Sugerir recetas con seleccionados</button>
+    </div>
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">🔍 Buscar receta completa</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="recetaBuscador" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" placeholder="Ej: milanesas napolitanas..." onkeydown="if(event.key==='Enter')buscarReceta()">
+        <button onclick="buscarReceta()" style="padding:9px 14px;border:none;border-radius:10px;background:#E8A020;color:#fff;font-size:13px;font-weight:600;cursor:pointer">🔍</button>
+      </div>
+      <div id="recetaBuscadorResult"></div>
     </div>
     <div class="card">
       <div class="section-lbl" style="margin-bottom:10px">¿Qué me falta para una receta?</div>
@@ -1821,6 +1829,91 @@ function renderVencList(){
   if(!proximos.length){el.innerHTML='No hay productos próximos a vencer (en 7 días).';return;}
   el.innerHTML=proximos.map(i=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg4)"><span>'+( ALL_CATS[i.cat]||'📦')+'</span><span style="flex:1;font-weight:500;color:var(--text)">'+i.nombre+'</span>'+getBadge(i.venc)+'</div>').join('');
 }
+async function buscarReceta(){
+  const query=document.getElementById('recetaBuscador').value.trim();
+  if(!query)return;
+  const el=document.getElementById('recetaBuscadorResult');
+  el.innerHTML='<div class="receta-loading">🔍 Buscando receta...</div>';
+  const stockList=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase());
+  try{
+    const text=await callGroq(
+      'Dame la receta completa de: "'+query+'".\n'+
+      'Tengo en casa: '+stockList.join(', ')+'\n\n'+
+      'Respondé SOLO en JSON sin backticks:\n'+
+      '{'+
+        '"nombre":"nombre de la receta",'+
+        '"porciones":4,'+
+        '"tiempo_prep":"30 min",'+
+        '"dificultad":"fácil/media/difícil",'+
+        '"ingredientes":[{"nombre":"...","cantidad":"...","tengo":true,"esencial":true}],'+
+        '"pasos":["paso 1...","paso 2..."],'+
+        '"tip":"consejo opcional"'+
+      '}'
+    );
+    const r=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);
+    const tengo=(r.ingredientes||[]).filter(i=>i.tengo);
+    const faltanOpc=(r.ingredientes||[]).filter(i=>!i.tengo&&!i.esencial);
+
+    const wrap=document.createElement('div');wrap.className='receta-card';
+    // Header
+    const hdr=document.createElement('div');hdr.style.cssText='margin-bottom:12px';
+    hdr.innerHTML='<div class="receta-title" style="font-size:17px;margin-bottom:6px">🍽️ '+r.nombre+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      (r.porciones?'<span class="receta-tag">👥 '+r.porciones+' porciones</span>':'')+
+      (r.tiempo_prep?'<span class="receta-tag">⏱️ '+r.tiempo_prep+'</span>':'')+
+      (r.dificultad?'<span class="receta-tag">📊 '+r.dificultad+'</span>':'')+
+      '</div>';
+    wrap.appendChild(hdr);
+
+    // Ingredients
+    const ingTitle=document.createElement('div');ingTitle.className='section-lbl';ingTitle.style.marginTop='10px';ingTitle.textContent='Ingredientes';
+    wrap.appendChild(ingTitle);
+    const ingList=document.createElement('div');
+    (r.ingredientes||[]).forEach(ing=>{
+      const row=document.createElement('div');row.className='falta-row';
+      const nm=document.createElement('span');nm.className='falta-nombre';
+      nm.innerHTML=ing.nombre+' <span style="color:var(--text3);font-size:12px">'+ing.cantidad+'</span>'+(!ing.esencial?' <span style="font-size:10px;color:var(--text3)">(opt)</span>':'');
+      const st=document.createElement('span');st.className='falta-estado '+(ing.tengo?'tengo':'falta');
+      st.textContent=ing.tengo?'✓ Tengo':'✗ Falta';
+      row.appendChild(nm);row.appendChild(st);
+      ingList.appendChild(row);
+    });
+    wrap.appendChild(ingList);
+
+    // Steps
+    if(r.pasos?.length){
+      const stTitle=document.createElement('div');stTitle.className='section-lbl';stTitle.style.marginTop='12px';stTitle.textContent='Preparación';
+      wrap.appendChild(stTitle);
+      const stList=document.createElement('div');stList.className='receta-body';stList.style.marginTop='6px';
+      stList.textContent=r.pasos.map((p,i)=>(i+1)+'. '+p).join('\n');
+      wrap.appendChild(stList);
+    }
+
+    // Tip
+    if(r.tip){
+      const tip=document.createElement('div');tip.style.cssText='margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2)';
+      tip.textContent='💡 '+r.tip;
+      wrap.appendChild(tip);
+    }
+
+    // Add missing to compras
+    if(faltanEsenciales.length){
+      const btn=document.createElement('button');btn.className='btn-secondary';btn.style.marginTop='10px';
+      btn.textContent='🛒 Agregar '+faltanEsenciales.length+' faltante'+(faltanEsenciales.length!==1?'s':'')+' a compras';
+      btn.onclick=()=>{
+        agregarFaltantes(faltanEsenciales.map(i=>i.nombre));
+      };
+      wrap.appendChild(btn);
+    }
+
+    el.innerHTML='';
+    el.appendChild(wrap);
+  }catch(e){
+    el.innerHTML='<div class="empty">Error: '+(e.message||'revisá tu API key')+'</div>';
+  }
+}
+
 async function sugerirRecetasAll(){
   const btn=document.getElementById('btnSugerirAll');btn.disabled=true;btn.textContent='Pensando...';
   const allStock=getAllStocked().filter(i=>i.qty>0);
