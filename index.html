@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.4</div>
+  <div class="ver">v9.2.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1261,7 +1261,7 @@ function renderInventory(){
         '<div class="item-name">'+item.nombre+'</div>'+
         '<div class="item-meta">'+
           (q?'<span class="badge-lugar '+curLoc+'">'+(curLoc==='h'?'🧊':curLoc==='f'?'❄️':'🫙')+'</span> ':'')+
-          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+(item.tupper?' <span class="badge" style="background:#EEF0FE;color:#2D3490">❄️ #'+item.tupper+'</span>':'')+
+          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+(item.tupper?' <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:100px;font-weight:700;background:'+(item.loc==='h'?'#deeefb':item.loc==='f'?'#EEF0FE':'#faeeda')+';color:'+(item.loc==='h'?'#185FA5':item.loc==='f'?'#2D3490':'#633806')+'">'+(item.loc==='h'?'🧊':'❄️')+' #'+item.tupper+'</span>':'')+
         '</div>'+
         (item.lastBy?'<div class="item-by">por '+item.lastBy+'</div>':'')+
       '</div>'+
@@ -1369,7 +1369,7 @@ function openAssignModal(catId){
   document.getElementById('assignVenc').value=activeStock.venc||'';
   document.getElementById('assignMin').value=maxStockMin||0;
   // Restore tupper number
-  const tupperNum=stock[catId]?.f?.tupper||'';
+  const tupperNum=stock[catId]?.f?.tupper||stock[catId]?.h?.tupper||'';
   const tf=document.getElementById('assignTupper');if(tf)tf.value=tupperNum;
   const tField=document.getElementById('tupperField');
   if(tField)tField.style.display=assignQtys.f>0?'block':'none';
@@ -1413,7 +1413,17 @@ function getQtyStep(){
 }
 function updateTupperVisibility(){
   const tf=document.getElementById('tupperField');
-  if(tf)tf.style.display=assignQtys.f>0?'block':'none';
+  if(tf){
+    const show=assignQtys.f>0||assignQtys.h>0;
+    tf.style.display=show?'block':'none';
+    // Update label based on location
+    const lbl=tf.querySelector('label');
+    if(lbl){
+      if(assignQtys.h>0&&assignQtys.f===0)lbl.innerHTML='🧊 Cajón/estante # <span style="font-size:11px;color:var(--text3)">(posición en la heladera)</span>';
+      else if(assignQtys.f>0&&assignQtys.h===0)lbl.innerHTML='❄️ Tupper # <span style="font-size:11px;color:var(--text3)">(posición en el freezer)</span>';
+      else lbl.innerHTML='📍 Posición # <span style="font-size:11px;color:var(--text3)">(heladera o freezer)</span>';
+    }
+  }
 }
 function setAssignQty(l,val){
   assignQtys[l]=Math.max(0,parseFloat(parseFloat(val||0).toFixed(1)));
@@ -1434,7 +1444,8 @@ function saveAssignment(){
   // Save stock — only apply stockMin to locations with qty > 0
   const tupperNum=document.getElementById('assignTupper')?.value||null;
   ['h','f','d'].forEach(l=>{
-    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto,tupper:l==='f'&&tupperNum?parseInt(tupperNum):null};
+    stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto,
+      tupper:(l==='f'||l==='h')&&tupperNum&&assignQtys[l]>0?parseInt(tupperNum):null};
   });
   // Save first, then remove any existing auto compra ref for this item (stale)
   localStorage.setItem('stock2',JSON.stringify(stock));
