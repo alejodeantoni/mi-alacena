@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.4</div>
+  <div class="ver">v9.3.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -683,6 +683,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="field"><label>Nota</label><textarea id="ecNota"></textarea></div>
+  <div class="field">
+    <label>Ícono del producto</label>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div id="ecIconPreview" style="width:44px;height:44px;border-radius:10px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--border2)">📦</div>
+      <button onclick="toggleEmojiPicker()" style="padding:7px 14px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer">😊 Elegir emoji</button>
+      <button onclick="clearEcEmoji()" style="padding:7px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text3);font-size:13px;cursor:pointer">✕</button>
+    </div>
+    <div id="emojiPicker" style="display:none;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:10px">
+      <div id="emojiGrid" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+    </div>
+  </div>
   <div class="field">
     <label>Foto del producto</label>
     <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
@@ -1164,7 +1175,7 @@ async function callGemini(prompt,imageBase64=null,mimeType='image/jpeg'){
 
 function getLocItems(l){
   const cat=loadCatalog();const stock=loadStock();
-  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null,tupper:s.tupper||null};}).filter(Boolean);
+  return cat.map(p=>{const s=stock[p.id]?.[l];if(!s||s.qty<=0)return null;return{...p,qty:s.qty,venc:s.venc||null,stockMin:s.stockMin||0,loc:l,abierto:s.abierto||false,lastBy:s.lastBy||null,tupper:s.tupper||null,emoji:p.emoji||null};}).filter(Boolean);
 }
 function getAllStocked(){return['h','f','d'].flatMap(l=>getLocItems(l));}
 
@@ -1295,7 +1306,7 @@ function renderInventory(){
     const isLow=item.stockMin>0&&item.qty<=item.stockMin;const curLoc=item.loc||loc;
     return '<div class="swipe-outer" id="so-'+item.id+'_'+curLoc+'"><div class="swipe-reveal">🗑</div>'+
       '<div class="swipe-card" id="swc-'+item.id+'_'+curLoc+'"><div class="item-row">'+
-      '<div class="item-icon" style="background:'+(COLORS[item.cat]||'#F1EFE8')+'">'+(item.img?'<img src="'+item.img+'" alt="" onclick="openImgViewer(this.src)" style="cursor:zoom-in">':(CATS[item.cat]||ALL_CATS[item.cat]||'📦'))+'</div>'+
+      '<div class="item-icon" style="background:'+(COLORS[item.cat]||'#F1EFE8')+'">'+(item.img?'<img src="'+item.img+'" alt="" onclick="openImgViewer(this.src)" style="cursor:zoom-in">':(item.emoji||CATS[item.cat]||ALL_CATS[item.cat]||'📦'))+'</div>'+
       '<div class="item-info">'+
         '<div class="item-name">'+item.nombre+'</div>'+
         '<div class="item-meta">'+
@@ -1591,12 +1602,54 @@ function clearEditCatPhoto(){
 }
 let currentEditCatImg=null;
 
+const EMOJI_LIB={"Frutas": ["🍋", "🍊", "🍎", "🍐", "🍇", "🍓", "🍒", "🍑", "🥭", "🍍", "🥝", "🍌", "🍉", "🫐", "🍈", "🍏", "🫒"], "Verduras": ["🥦", "🥕", "🍅", "🥒", "🌽", "🧅", "🧄", "🫑", "🥑", "🍆", "🥬", "🥔", "🌶️", "🍄", "🫛", "🥗"], "Carnes y aves": ["🥩", "🍗", "🍖", "🥓", "🌭", "🍳", "🫀"], "Pescados": ["🐟", "🐠", "🦐", "🦞", "🦀", "🦑", "🐙", "🍣", "🎣"], "Lácteos": ["🥛", "🧀", "🧈", "🍦", "🫙"], "Fiambres": ["🍖", "🥩", "🌭", "🥓"], "Fiambres al vacío": ["🧀", "🥩", "🍖"], "Bebidas": ["🥤", "🧃", "🍵", "☕", "🧋", "🍶", "🥂", "🫖", "💧"], "Harinas y cereales": ["🌾", "🌽", "🥐", "🍞", "🥖", "🧁", "🍰"], "Arroz y pastas": ["🍝", "🍜", "🍚", "🥘", "🫕"], "Aceites": ["🫙", "🧴", "🍶"], "Conservas": ["🥫", "🫙", "🍯"], "Snacks": ["🍪", "🍫", "🍬", "🍭", "🥨", "🍿", "🥜", "🫘"], "Especias": ["🌶️", "🧂", "🫙", "🌿", "🍃", "🫚"], "Congelados": ["🧊", "❄️", "🍦"], "Limpieza": ["🧹", "🧽", "🫧", "🧴", "🪣"], "Pastas caseras": ["🍝", "🥟", "🫕", "🍜"], "Salsas": ["🫕", "🍅", "🧂"], "Otros": ["📦", "🛒", "🏪", "⭐", "❤️", "🎁"]};
+let currentEcEmoji=null;
+
+function toggleEmojiPicker(){
+  const picker=document.getElementById('emojiPicker');
+  picker.style.display=picker.style.display==='none'?'block':'none';
+  if(picker.style.display==='block')renderEmojiGrid();
+}
+
+function renderEmojiGrid(){
+  const grid=document.getElementById('emojiGrid');
+  const catEl=document.getElementById('ecCat');
+  const cat=catEl?catEl.value:'Otros';
+  const emojis=EMOJI_LIB[cat]||EMOJI_LIB['Otros'];
+  // Also add some from adjacent cats
+  const allEmojis=[...new Set([...emojis,...(EMOJI_LIB['Otros']||[])])];
+  grid.innerHTML='';
+  allEmojis.forEach(e=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='width:36px;height:36px;font-size:20px;border:1px solid var(--border2);border-radius:8px;background:'+(currentEcEmoji===e?'var(--bg4)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center';
+    btn.textContent=e;
+    btn.onclick=function(){selectEmoji(e);};
+    grid.appendChild(btn);
+  });
+}
+
+function selectEmoji(e){
+  currentEcEmoji=e;
+  document.getElementById('ecIconPreview').textContent=e;
+  document.getElementById('emojiPicker').style.display='none';
+}
+
+function clearEcEmoji(){
+  currentEcEmoji=null;
+  document.getElementById('ecIconPreview').textContent='📦';
+}
+
 function openEditCatModal(id){
   editingCatId=id;const p=loadCatalog().find(x=>x.id===id);if(!p)return;
   document.getElementById('ecNombre').value=p.nombre;document.getElementById('ecCat').value=p.cat;
   document.getElementById('ecUnidad').value=p.unidad||'unid';document.getElementById('ecNota').value=p.nota||'';
   document.getElementById('ecReminder').value=p.reminder||0;
   document.getElementById('ecTienda').value=p.tienda||'';
+  // Load emoji
+  currentEcEmoji=p.emoji||null;
+  const iconPrev=document.getElementById('ecIconPreview');
+  if(iconPrev)iconPrev.textContent=p.emoji||(p.img?'📷':'📦');
+  const ep=document.getElementById('emojiPicker');if(ep)ep.style.display='none';
   // Load existing photo
   currentEditCatImg=p.img||null;
   const prev=document.getElementById('ecImgPreview');
@@ -1611,6 +1664,7 @@ function saveEditCatalog(){
   cat[idx].nota=document.getElementById('ecNota').value.trim()||null;
   cat[idx].reminder=parseInt(document.getElementById('ecReminder').value)||0;
   cat[idx].tienda=document.getElementById('ecTienda').value||null;
+  if(currentEcEmoji!==undefined)cat[idx].emoji=currentEcEmoji;
   if(currentEditCatImg!==undefined)cat[idx].img=currentEditCatImg;
   saveCatalog(cat);closeEditCatModal();renderCatalog();renderAll();toast('Guardado');
 }
