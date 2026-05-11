@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.1.1</div>
+  <div class="ver">v9.2.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -295,6 +295,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div class="sub-tabs" id="subTabsRecetas" style="display:none">
   <button class="sub-tab rec2 active" id="lt-rec2" onclick="setLoc('rec2')"><span>✨</span>Sugerencias</button>
+  <button class="sub-tab misrec" id="lt-misrec" onclick="setLoc('misrec')"><span>📖</span>Mis recetas</button>
 </div>
 <div class="sub-tabs" id="subTabsMas" style="display:none">
   <button class="sub-tab chat" id="lt-chat" onclick="setLoc('chat')"><span>💬</span>Chat <span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
@@ -515,6 +516,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div id="espStats" style="margin-bottom:10px"></div>
   <div id="espList"></div>
+</div>
+
+<!-- MIS RECETAS -->
+<div id="sc-misrec" class="screen" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input id="misrecSearch" placeholder="Buscar mis recetas..." oninput="renderMisRecetas()" style="flex:1;font-size:14px;padding:8px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none">
+    <button onclick="abrirNuevaReceta()" style="padding:8px 14px;border:none;border-radius:10px;background:#C87820;color:#fff;font-size:13px;font-weight:600;cursor:pointer">+ Nueva</button>
+  </div>
+  <div id="misrecList"></div>
+</div>
+<div class="modal-bg" id="misrecModalBg" onclick="if(event.target===this)cerrarNuevaReceta()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title" id="misrecModalTitle">Nueva receta</div></div>
+  <div class="field"><label>Nombre</label><input id="misrecNombre" placeholder="Ej: Milanesas napolitanas"/></div>
+  <div class="row2">
+    <div class="field"><label>Porciones</label><input id="misrecPorciones" type="number" min="1" value="4"/></div>
+    <div class="field"><label>Tiempo</label><input id="misrecTiempo" placeholder="Ej: 45 min"/></div>
+  </div>
+  <div class="field"><label>Ingredientes (uno por línea)</label><textarea id="misrecIngredientes" style="height:100px;font-size:13px" placeholder="500g milanesas&#10;2 tomates&#10;100g mozzarella"></textarea></div>
+  <div class="field"><label>Pasos (uno por línea)</label><textarea id="misrecPasos" style="height:120px;font-size:13px" placeholder="Condimentar las milanesas&#10;Freír en aceite caliente"></textarea></div>
+  <div class="field"><label>Notas (opcional)</label><textarea id="misrecNotas" placeholder="Tips, variaciones..."></textarea></div>
+  <button class="btn-primary" style="background:#C87820" onclick="guardarMisReceta()">💾 Guardar receta</button>
+  <button class="btn-secondary" onclick="cerrarNuevaReceta()">Cancelar</button>
+</div>
 </div>
 
 <!-- HISTORIAL -->
@@ -793,7 +819,7 @@ let binId=localStorage.getItem('jsonbin_bin_id')||getKey('jsonbin_bin');
 function scheduleSync(){if(syncTimeout)clearTimeout(syncTimeout);syncTimeout=setTimeout(pushToCloud,1500);}
 async function pushToCloud(){
   if(isSyncing)return;isSyncing=true;showSyncStatus('⏫ Guardando...');
-  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),especias:loadEspecias(),ts:Date.now(),
+  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),especias:loadEspecias(),misRecetas:loadMisRecetas(),ts:Date.now(),
     cfg:{groq:getKey('groq_key'),gemini:getKey('gemini_key')}};
   try{
     if(!binId){
@@ -825,6 +851,7 @@ async function pullFromCloud(){
       localStorage.setItem('data_ts',String(cloudTs));
       // Restore keys from cloud if not set locally
       if(data.especias)localStorage.setItem('especias',JSON.stringify(data.especias));
+      if(data.misRecetas)localStorage.setItem('misRecetas',JSON.stringify(data.misRecetas));
       if(data.cfg){
         if(data.cfg.groq&&!getKey('groq_key'))localStorage.setItem('cfg_groq_key',data.cfg.groq);
         if(data.cfg.gemini&&!getKey('gemini_key'))localStorage.setItem('cfg_gemini_key',data.cfg.gemini);
@@ -1132,7 +1159,7 @@ function setLoc(l){
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super','misrec'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -1914,6 +1941,10 @@ async function buscarReceta(){
       tip.textContent='💡 '+r.tip;
       wrap.appendChild(tip);
     }
+    const saveBtn=document.createElement('button');saveBtn.className='btn-secondary';saveBtn.style.marginTop='8px';
+    saveBtn.textContent='📖 Guardar en Mis Recetas';
+    saveBtn.onclick=(function(rec){return function(){guardarRecetaDesdeIA(rec.nombre,rec.ingredientes||[],rec.pasos||[],rec.tip||'');};})(r);
+    wrap.appendChild(saveBtn);
 
     // Add missing to compras
     if(faltanEsenciales.length){
@@ -2513,6 +2544,136 @@ function renderEsp(){
   }
 }
 
+
+// MIS RECETAS
+function loadMisRecetas(){return JSON.parse(localStorage.getItem('misRecetas')||'[]');}
+function saveMisRecetas(r){localStorage.setItem('misRecetas',JSON.stringify(r));scheduleSync();}
+let editingRecetaId=null;
+
+function abrirNuevaReceta(receta){
+  receta=receta||null;
+  editingRecetaId=receta?receta.id:null;
+  document.getElementById('misrecModalTitle').textContent=receta?'Editar receta':'Nueva receta';
+  document.getElementById('misrecNombre').value=receta?receta.nombre:'';
+  document.getElementById('misrecPorciones').value=receta?receta.porciones:4;
+  document.getElementById('misrecTiempo').value=receta?receta.tiempo:'';
+  document.getElementById('misrecIngredientes').value=receta?(receta.ingredientes||[]).join('\n'):'';
+  document.getElementById('misrecPasos').value=receta?(receta.pasos||[]).join('\n'):'';
+  document.getElementById('misrecNotas').value=receta?receta.notas:'';
+  document.getElementById('misrecModalBg').classList.add('open');
+}
+function cerrarNuevaReceta(){document.getElementById('misrecModalBg').classList.remove('open');}
+
+function guardarMisReceta(){
+  const nombre=document.getElementById('misrecNombre').value.trim();
+  if(!nombre){toast('Ingresá el nombre');return;}
+  const recetas=loadMisRecetas();
+  const ing=document.getElementById('misrecIngredientes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const pasos=document.getElementById('misrecPasos').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const nueva={id:editingRecetaId||Date.now().toString(),nombre,
+    porciones:parseInt(document.getElementById('misrecPorciones').value)||4,
+    tiempo:document.getElementById('misrecTiempo').value.trim(),
+    ingredientes:ing,pasos,
+    notas:document.getElementById('misrecNotas').value.trim(),
+    creadaEn:new Date().toISOString()};
+  if(editingRecetaId){
+    const idx=recetas.findIndex(r=>r.id===editingRecetaId);
+    if(idx>=0)recetas[idx]=nueva;else recetas.push(nueva);
+  } else {recetas.unshift(nueva);}
+  saveMisRecetas(recetas);
+  cerrarNuevaReceta();
+  renderMisRecetas();
+  toast('Receta guardada 📖');
+}
+
+function eliminarReceta(id){
+  if(!confirm('¿Eliminar esta receta?'))return;
+  saveMisRecetas(loadMisRecetas().filter(r=>r.id!==id));
+  renderMisRecetas();toast('Eliminada');
+}
+
+function guardarRecetaDesdeIA(nombre,ingredientes,pasos,tip){
+  const recetas=loadMisRecetas();
+  recetas.unshift({id:Date.now().toString(),nombre,porciones:4,tiempo:'',
+    ingredientes:ingredientes.map(i=>(i.cantidad||'')+' '+i.nombre),
+    pasos,notas:tip||'',creadaEn:new Date().toISOString()});
+  saveMisRecetas(recetas);
+  toast('✅ Guardada en Mis Recetas 📖');
+}
+
+function checkStockParaReceta(ingredientes){
+  const allStock=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase());
+  return ingredientes.map(ing=>{
+    const nombre=ing.replace(/^[\d.,]+\s*[a-zA-Z]*\s*/,'').toLowerCase().trim();
+    const tengo=allStock.some(s=>s.includes(nombre)||nombre.includes(s.split(' ')[0]));
+    return{ing,tengo};
+  });
+}
+
+function renderMisRecetas(){
+  const q=(document.getElementById('misrecSearch')?.value||'').toLowerCase().trim();
+  let recetas=loadMisRecetas();
+  if(q)recetas=recetas.filter(r=>r.nombre.toLowerCase().includes(q));
+  const el=document.getElementById('misrecList');
+  if(!recetas.length){
+    el.innerHTML='<div class="empty" style="padding:2rem"><div style="font-size:36px;margin-bottom:12px">📖</div>'+
+      '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Sin recetas guardadas</div>'+
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:16px">Guardá recetas propias o las que te sugirió la IA.</div>'+
+      '<button onclick="abrirNuevaReceta()" style="padding:12px 24px;border:none;border-radius:12px;background:#C87820;color:#fff;font-size:14px;font-weight:600;cursor:pointer">+ Crear primera receta</button></div>';
+    return;
+  }
+  el.innerHTML='';
+  recetas.forEach(r=>{
+    const sc=checkStockParaReceta(r.ingredientes||[]);
+    const ok=sc.every(s=>s.tengo);
+    const faltan=sc.filter(s=>!s.tengo).length;
+    const card=document.createElement('div');card.className='misrec-card';
+    const hdr=document.createElement('div');hdr.className='misrec-header';
+    hdr.onclick=function(){card.querySelector('.misrec-body').classList.toggle('open');};
+    const info=document.createElement('div');info.style.flex='1';
+    info.innerHTML='<div class="misrec-title">'+r.nombre+'</div><div class="misrec-meta">'+
+      (r.porciones?'<span>👥 '+r.porciones+'</span>':'')+
+      (r.tiempo?'<span>⏱️ '+r.tiempo+'</span>':'')+
+      '<span style="color:'+(ok?'#27500A':faltan>0?'#791F1F':'#BA7517')+';font-weight:600">'+
+      (ok?'✅ Podés hacerla':'❌ Faltan '+faltan)+'</span></div>';
+    const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+    const eb=document.createElement('button');eb.className='icon-btn';eb.textContent='✏️';
+    eb.onclick=function(e){e.stopPropagation();abrirNuevaReceta(r);};
+    const db=document.createElement('button');db.className='icon-btn';db.style.color='#A32D2D';db.textContent='🗑';
+    db.onclick=(function(id){return function(e){e.stopPropagation();eliminarReceta(id);};})(r.id);
+    btns.appendChild(eb);btns.appendChild(db);
+    hdr.appendChild(info);hdr.appendChild(btns);card.appendChild(hdr);
+    const body=document.createElement('div');body.className='misrec-body';
+    if(r.ingredientes&&r.ingredientes.length){
+      const t=document.createElement('div');t.className='section-lbl';t.textContent='Ingredientes';body.appendChild(t);
+      sc.forEach(function(item){
+        const row=document.createElement('div');row.className='misrec-ing-row';
+        const nm=document.createElement('span');nm.style.flex='1';nm.textContent=item.ing;
+        const badge=document.createElement('span');badge.className=item.tengo?'misrec-badge-si':'misrec-badge-no';
+        badge.textContent=item.tengo?'✓ Tengo':'✗ Falta';
+        row.appendChild(nm);row.appendChild(badge);body.appendChild(row);
+      });
+      if(sc.some(s=>!s.tengo)){
+        const ab=document.createElement('button');ab.className='btn-secondary';ab.style.marginTop='8px';
+        ab.textContent='🛒 Agregar faltantes a compras';
+        ab.onclick=(function(items){return function(){
+          agregarFaltantes(items.filter(s=>!s.tengo).map(s=>s.ing.replace(/^[\d.,]+\s*[a-zA-Z]*\s*/,'').trim()));
+        };})(sc);
+        body.appendChild(ab);
+      }
+    }
+    if(r.pasos&&r.pasos.length){
+      const pt=document.createElement('div');pt.className='section-lbl';pt.style.marginTop='10px';pt.textContent='Preparación';body.appendChild(pt);
+      const pd=document.createElement('div');pd.className='receta-body';
+      pd.textContent=r.pasos.map(function(p,i){return (i+1)+'. '+p;}).join('\n');body.appendChild(pd);
+    }
+    if(r.notas){
+      const nd=document.createElement('div');nd.style.cssText='margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2)';
+      nd.textContent='💡 '+r.notas;body.appendChild(nd);
+    }
+    card.appendChild(body);el.appendChild(card);
+  });
+}
 
 // HISTORIAL
 function renderHist(){
