@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.0</div>
+  <div class="ver">v9.3.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1408,24 +1408,34 @@ function openAssignModal(catId){
   const wasAbierto=activeStock.abierto||false;
   aiSuggestedDate=null;
   const aiEl=document.getElementById('aiDateSuggest');
-  if(FRESH_CATS.includes(cat.cat)&&DURACION[cat.cat]){
-    const dias=DURACION[cat.cat];
-    let txt='';aiSuggestedDate={};
-    if(dias.h){const hDate=addDays(dias.h);txt+='Heladera: ~'+dias.h+' días ('+new Date(hDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.h=hDate;}
-    if(dias.f){const fDate=addDays(dias.f);txt+='Freezer: ~'+dias.f+' días ('+new Date(fDate+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.f=fDate;}
-    if(dias.d){const dDate=addDays(dias.d);txt+='Despensa: ~'+Math.round(dias.d/30)+' meses ('+new Date(dDate+'T00:00:00').toLocaleDateString('es-AR')+')';aiSuggestedDate.d=dDate;}
-    document.getElementById('aiDateText').textContent=txt;
-    aiEl.style.display='block';
-  } else {aiEl.style.display='none';}
-  isAbierto=wasAbierto;abiertoDateSuggested=null;
-  const ac=document.getElementById('abiertoCheck');
-  if(ac){
-    ac.style.background=wasAbierto?'#E8A020':'transparent';
-    ac.style.borderColor=wasAbierto?'#E8A020':'var(--border2)';
-    ac.textContent=wasAbierto?'✓':'';
-  }
-  const ads=document.getElementById('abiertoDateSuggest');if(ads)ads.style.display='none';
+  aiEl.style.display='none';
   document.getElementById('assignModalBg').classList.add('open');
+  // Ask AI for date estimate based on product name
+  estimarFechaIA(cat);
+}
+async function estimarFechaIA(cat){
+  const aiEl=document.getElementById('aiDateSuggest');
+  const aiText=document.getElementById('aiDateText');
+  aiEl.style.display='block';
+  aiText.textContent='Calculando...';
+  try{
+    const locs=[];
+    if(assignQtys.h>0||true)locs.push('heladera');
+    if(assignQtys.f>0)locs.push('freezer');
+    if(assignQtys.d>0)locs.push('despensa');
+    const prompt='¿Cuántos días dura "'+cat.nombre+'" (categoría: '+cat.cat+') guardado en: '+locs.join(', ')+'? Respondé SOLO con JSON sin backticks: {"h":7,"f":90,"d":null} donde cada valor es días o null si no aplica. Sin texto extra.';
+    const text=await callGroq(prompt);
+    const dias=JSON.parse(text.replace(/```json|```/g,'').trim());
+    aiSuggestedDate={};
+    let txt='';
+    if(dias.h&&assignQtys.h>=0){const d=addDays(dias.h);txt+='🧊 ~'+dias.h+'d ('+new Date(d+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.h=d;}
+    if(dias.f&&assignQtys.f>=0){const d=addDays(dias.f);txt+='❄️ ~'+dias.f+'d ('+new Date(d+'T00:00:00').toLocaleDateString('es-AR')+') ';aiSuggestedDate.f=d;}
+    if(dias.d&&assignQtys.d>=0){const d=addDays(dias.d);txt+='🫙 ~'+Math.round(dias.d/30)+'m ('+new Date(d+'T00:00:00').toLocaleDateString('es-AR')+')';aiSuggestedDate.d=d;}
+    aiText.textContent=txt||'No aplica';
+    if(!txt)aiEl.style.display='none';
+  }catch(e){
+    aiEl.style.display='none';
+  }
 }
 function setVencDays(days){
   document.getElementById('assignVenc').value=addDays(days);
