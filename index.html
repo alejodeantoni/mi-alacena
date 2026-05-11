@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.5</div>
+  <div class="ver">v9.2.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1261,7 +1261,7 @@ function renderInventory(){
         '<div class="item-name">'+item.nombre+'</div>'+
         '<div class="item-meta">'+
           (q?'<span class="badge-lugar '+curLoc+'">'+(curLoc==='h'?'🧊':curLoc==='f'?'❄️':'🫙')+'</span> ':'')+
-          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+(item.tupper?' <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:100px;font-weight:700;background:'+(item.loc==='h'?'#deeefb':item.loc==='f'?'#EEF0FE':'#faeeda')+';color:'+(item.loc==='h'?'#185FA5':item.loc==='f'?'#2D3490':'#633806')+'">'+(item.loc==='h'?'🧊':'❄️')+' #'+item.tupper+'</span>':'')+
+          item.cat+' '+getBadge(item.venc)+(isLow?' <span class="badge badge-low">Stock bajo</span>':'')+(item.abierto?' <span class="badge badge-warn">📦 Abierto</span>':'')+(item.tupper?' <span class="badge" style="background:#2a2a28;color:#f0f0e8;font-weight:600">'+(item.loc==='h'?'🧊':'❄️')+' tupper '+item.tupper+'</span>':'')+
         '</div>'+
         (item.lastBy?'<div class="item-by">por '+item.lastBy+'</div>':'')+
       '</div>'+
