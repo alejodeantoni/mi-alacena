@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.0.3</div>
+  <div class="ver">v9.0.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1846,6 +1846,8 @@ function renderRapido(){
 }
 
 function renderSuperList(){
+  superCart=loadSuperCart(); // sync
+  renderSuperCart(); // always render cart when showing super list
   const q=(document.getElementById('superSearch').value||'').toLowerCase().trim();
   const catalog=loadCatalog();
   let items=q?catalog.filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):catalog;
@@ -1901,6 +1903,7 @@ function addToSuperCart(catId){
 }
 
 function renderSuperCart(){
+  superCart=loadSuperCart(); // always sync from session
   const items=Object.values(superCart);
   const card=document.getElementById('superCartCard');
   const el=document.getElementById('superCart');
