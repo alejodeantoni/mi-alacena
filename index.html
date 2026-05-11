@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.1</div>
+  <div class="ver">v9.3.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -727,7 +727,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="ai-date-suggest" id="aiDateSuggest">
     <strong>💡 Fecha estimada:</strong> <span id="aiDateText"></span>
-    <br><button onclick="applyAiDate()">Usar esta fecha</button>
+    <br>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <button onclick="applyAiDate()" style="padding:5px 12px;border:1px solid #5B63D3;border-radius:8px;background:transparent;color:#2D3490;font-size:12px;cursor:pointer;font-weight:500">Usar esta fecha</button>
+      <button onclick="estimarFechaIA(loadCatalog().find(p=>p.id===assigningCatId))" style="padding:5px 12px;border:1px solid #5B63D3;border-radius:8px;background:transparent;color:#2D3490;font-size:12px;cursor:pointer;font-weight:500">🔄 Recalcular</button>
+    </div>
   </div>
   <div id="assignLocRows">
     <div class="loc-assign-row"><div class="loc-assign-icon">🧊</div><div class="loc-assign-name">Heladera</div><div class="loc-assign-qty"><button class="qty-btn" onclick="changeAssignQty('h',-1)">−</button><input class="qty-input" id="aqh" type="number" value="0" min="0" step="0.1" onchange="setAssignQty('h',this.value)" onclick="this.select()"><button class="qty-btn" onclick="changeAssignQty('h',1)">+</button></div></div>
@@ -1424,7 +1428,8 @@ async function estimarFechaIA(cat){
     if(assignQtys.f>0)locs.push('freezer');
     if(assignQtys.d>0)locs.push('despensa');
     const prompt='¿Cuántos días dura "'+cat.nombre+'" (categoría: '+cat.cat+') guardado en: '+locs.join(', ')+'? Respondé SOLO con JSON sin backticks: {"h":7,"f":90,"d":null} donde cada valor es días o null si no aplica. Sin texto extra.';
-    const text=await callGroq(prompt);
+    let text;
+    try{text=await callGeminiText(prompt);}catch(e){text=await callGroq(prompt);}
     const dias=JSON.parse(text.replace(/```json|```/g,'').trim());
     aiSuggestedDate={};
     let txt='';
