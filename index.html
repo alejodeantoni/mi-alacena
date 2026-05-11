@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.3</div>
+  <div class="ver">v9.3.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -631,7 +631,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="ai-status" id="aiStatus"></div>
   </div>
   <div class="input-section" id="add-sec-manual"></div>
-  <div class="field"><label>Nombre</label><input id="fNombre" placeholder="Ej: Leche entera"/></div>
+  <div class="field">
+    <label>Nombre</label>
+    <input id="fNombre" placeholder="Ej: Leche entera" oninput="checkDuplicados(this.value)"/>
+    <div id="duplicadosSuggest" style="display:none;margin-top:6px;border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--card)"></div>
+  </div>
   <div class="row2">
     <div class="field"><label>Categoría</label><select id="fCat">
       <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
@@ -1625,11 +1629,54 @@ function openAddModal(){
   document.getElementById('barcodePreview').style.display='none';document.getElementById('manualBarcodeWrap').style.display='none';
   document.getElementById('barcodeStatus').className='ai-status';document.getElementById('uploadPreview').style.display='none';
   document.getElementById('uploadLabel').style.display='block';document.getElementById('aiStatus').className='ai-status';
-  currentProductImg='';const aip=document.getElementById('addImgPreview');if(aip)aip.innerHTML='📦';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
+  currentProductImg='';const aip=document.getElementById('addImgPreview');if(aip)aip.innerHTML='📦';const ds=document.getElementById('duplicadosSuggest');if(ds)ds.style.display='none';document.getElementById('fNombre').value='';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
 }
 function closeAddModal(){document.getElementById('addModalBg').classList.remove('open');}
 function closeAddModalBg(e){if(e.target===document.getElementById('addModalBg'))closeAddModal();}
 function setAddMethod(m){addMethod=m;['barcode','photo','manual'].forEach(x=>{document.getElementById('mb-'+x).className='method-btn'+(x===m?' active':'');document.getElementById('add-sec-'+x).classList.toggle('active',x===m);});}
+
+function checkDuplicados(q){
+  const el=document.getElementById('duplicadosSuggest');
+  if(!q||q.length<2){el.style.display='none';return;}
+  const catalog=loadCatalog();
+  const matches=catalog.filter(p=>p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,4);
+  if(!matches.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML='';
+  const hdr=document.createElement('div');
+  hdr.style.cssText='font-size:11px;color:var(--text3);padding:8px 12px 4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em';
+  hdr.textContent='Ya existe en el catálogo';
+  el.appendChild(hdr);
+  const stockAll=loadStock();
+  matches.forEach(p=>{
+    const stock=stockAll[p.id]||{};
+    const locs=[];
+    if(stock.h?.qty>0)locs.push('🧊'+stock.h.qty);
+    if(stock.f?.qty>0)locs.push('❄️'+stock.f.qty);
+    if(stock.d?.qty>0)locs.push('🫙'+stock.d.qty);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-top:1px solid var(--bg4)';
+    row.onmouseover=function(){this.style.background='var(--bg3)';};
+    row.onmouseout=function(){this.style.background='';};
+    row.onclick=(function(id){return function(){usarProductoExistente(id);};})(p.id);
+    const icon=document.createElement('div');
+    icon.style.cssText='width:34px;height:34px;border-radius:8px;background:'+(COLORS[p.cat]||'#F1EFE8')+';display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0';
+    if(p.img){const img=document.createElement('img');img.src=p.img;img.style.cssText='width:100%;height:100%;object-fit:cover';icon.appendChild(img);}
+    else icon.textContent=ALL_CATS[p.cat]||'📦';
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    info.innerHTML='<div style="font-size:14px;font-weight:500;color:var(--text)">'+p.nombre+'</div><div style="font-size:11px;color:var(--text2)">'+p.cat+(locs.length?' · '+locs.join(' '):' · Sin stock')+'</div>';
+    const lbl=document.createElement('div');lbl.style.cssText='font-size:12px;color:#378ADD;font-weight:600;flex-shrink:0';lbl.textContent='Asignar →';
+    row.appendChild(icon);row.appendChild(info);row.appendChild(lbl);
+    el.appendChild(row);
+  });
+}
+
+function usarProductoExistente(catId){
+  document.getElementById('duplicadosSuggest').style.display='none';
+  closeAddModal();
+  setTimeout(()=>openAssignModal(catId), 150);
+  toast('Producto existente — asigná la cantidad');
+}
 
 function saveCatalogItem(){
   const nombre=document.getElementById('fNombre').value.trim();if(!nombre){alert('Ingresá el nombre');return;}
