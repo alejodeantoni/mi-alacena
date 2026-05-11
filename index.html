@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.2.6</div>
+  <div class="ver">v9.2.8</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -389,7 +389,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div id="compListView">
     <div id="smartCompras"></div>
-    <div class="card">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button id="compViewList" class="btn-primary" style="flex:1;margin-top:0;padding:8px;font-size:12px;background:#8A3A8A" onclick="setCompraView('list')">📋 Lista</button>
+      <button id="compViewSec" class="btn-secondary" style="flex:1;margin-top:0;padding:8px;font-size:12px" onclick="setCompraView('seccion')">🏪 Por tienda</button>
+    </div>
+    <div id="compraSecWrap" style="display:none"></div>
+    <div class="card" id="compraListWrap">
       <div class="section-lbl">Lista de compras</div>
       <div id="compraList"></div>
     </div>
@@ -398,7 +403,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn-secondary" style="margin-top:6px" onclick="clearDoneCompras()">🗑 Limpiar tachados</button>
   </div>
   <div id="compShopView" style="display:none">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Tocá para tachar mientras comprás:</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button id="shopViewAll" class="btn-primary" style="flex:1;margin-top:0;padding:8px;font-size:12px;background:#5B63D3" onclick="setShopView('all')">🛒 Todo</button>
+      <button id="shopViewSec" class="btn-secondary" style="flex:1;margin-top:0;padding:8px;font-size:12px" onclick="setShopView('seccion')">🏪 Por tienda</button>
+    </div>
     <div id="shopList"></div>
   </div>
 </div>
@@ -1727,6 +1735,63 @@ function renderCompras(){
   if(!compras.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin ítems</div>';return;}
   el.innerHTML=compras.map(c=>'<div class="compra-item"><div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div><span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+(c.auto?' <span style="font-size:10px;color:var(--text3)">auto</span>':'')+'</span><span class="badge-lugar '+(c.origen||'h')+'">'+(c.origen==='d'?'🫙':c.origen==='f'?'❄️':'🧊')+'</span><button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button></div>').join('');
 }
+function setShopView(v){
+  document.getElementById('shopViewAll').className=v==='all'?'btn-primary':'btn-secondary';
+  document.getElementById('shopViewAll').style.background=v==='all'?'#5B63D3':'transparent';
+  document.getElementById('shopViewSec').className=v==='seccion'?'btn-primary':'btn-secondary';
+  document.getElementById('shopViewSec').style.background=v==='seccion'?'#5B63D3':'transparent';
+  if(v==='seccion'){
+    renderShopListByTienda();
+  } else {
+    renderShopList();
+  }
+}
+
+function renderShopListByTienda(){
+  const compras=loadCompras();
+  const catalog=loadCatalog();
+  const el=document.getElementById('shopList');
+  el.innerHTML='';
+  if(!compras.length){el.innerHTML='<div class="empty">La lista de compras está vacía.</div>';return;}
+  // Group by tienda
+  const porTienda={};
+  compras.forEach(c=>{
+    const prod=catalog.find(p=>p.nombre===c.nombre.split(' (')[0]);
+    const cat=prod?.cat||'Otros';
+    const tienda=c.tienda||TIENDA_CAT[cat]||'supermercado';
+    if(!porTienda[tienda])porTienda[tienda]=[];
+    porTienda[tienda].push(c);
+  });
+  const tiendaOrder=['supermercado','verdulería','dietética','carnicería','otro'];
+  tiendaOrder.forEach(tienda=>{
+    if(!porTienda[tienda])return;
+    const icon=TIENDA_ICON[tienda]||'🛒';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-size:13px;font-weight:700;color:var(--text);margin:10px 0 6px;padding:8px 12px;background:var(--bg3);border-radius:10px';
+    hdr.textContent=icon+' '+tienda.charAt(0).toUpperCase()+tienda.slice(1);
+    el.appendChild(hdr);
+    const catalog2=loadCatalog();
+    porTienda[tienda].forEach(c=>{
+      const nombreBase=c.nombre.replace(/\s*\(x[\d.]+[^)]*\)/,'').trim();
+      const cat2=catalog2.find(p=>p.nombre===nombreBase);
+      const div=document.createElement('div');
+      div.className='shop-item'+(c.shopDone?' bought':'');
+      div.onclick=(function(id){return function(){toggleShopItem(id);setShopView('seccion');};})(c.id);
+      const iconDiv=document.createElement('div');iconDiv.className='shop-item-icon';
+      iconDiv.style.background=c.shopDone?'var(--bg4)':(COLORS[cat2?.cat]||'#F1EFE8');
+      if(cat2?.img){const img=document.createElement('img');img.src=cat2.img;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';iconDiv.appendChild(img);}
+      else iconDiv.textContent=ALL_CATS[cat2?.cat]||'📦';
+      const nm=document.createElement('div');nm.className='shop-item-name';
+      nm.textContent=c.nombre;
+      if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
+      const chk=document.createElement('div');chk.className='shop-check'+(c.shopDone?' done':'');
+      chk.textContent=c.shopDone?'✓':'';
+      div.appendChild(iconDiv);div.appendChild(nm);div.appendChild(chk);
+      el.appendChild(div);
+    });
+  });
+}
+
 function renderShopList(){
   const compras=loadCompras();
   const el=document.getElementById('shopList');
@@ -2371,14 +2436,14 @@ const SECCION_SUPER={
 };
 // Tienda mapping for each category
 const TIENDA_CAT={
-  'Lácteos':'supermercado','Carnes y aves':'supermercado','Pescados':'supermercado',
-  'Fiambres':'supermercado','Fiambres al vacío':'supermercado','Verduras':'verdulería',
+  'Lácteos':'supermercado','Carnes y aves':'carnicería','Pescados':'carnicería',
+  'Fiambres':'carnicería','Fiambres al vacío':'carnicería','Verduras':'verdulería',
   'Frutas':'verdulería','Bebidas':'supermercado','Harinas y cereales':'dietética',
   'Arroz y pastas':'supermercado','Aceites':'supermercado','Conservas':'supermercado',
   'Snacks':'supermercado','Especias':'dietética','Congelados':'supermercado',
   'Limpieza':'supermercado','Pastas caseras':'supermercado','Salsas':'supermercado','Otros':'supermercado'
 };
-const TIENDA_ICON={'supermercado':'🛒','verdulería':'🥦','dietética':'🌾','otro':'📦'};
+const TIENDA_ICON={'supermercado':'🛒','verdulería':'🥦','dietética':'🌾','carnicería':'🥩','otro':'📦'};
 
 function renderComprasPorSeccion(){
   const compras=loadCompras().filter(c=>!c.done);
