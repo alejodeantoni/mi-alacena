@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.1.0</div>
+  <div class="ver">v9.1.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1014,6 +1014,26 @@ async function callGroq(prompt,retries=2){
     }
   }
 }
+// Gemini Text - for text queries using Gemini
+async function callGeminiText(prompt){
+  const key=getKey('gemini_key');
+  if(!key)throw new Error('Configurá tu Gemini API Key en ⚙️');
+  for(let i=0;i<2;i++){
+    try{
+      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1}})
+      });
+      const data=await resp.json();
+      if(data.error){
+        if(i<1){await new Promise(r=>setTimeout(r,2000));continue;}
+        throw new Error(data.error.message);
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    }catch(e){if(i===1)throw e;await new Promise(r=>setTimeout(r,2000));}
+  }
+}
+
 // Gemini Vision - only for image analysis
 async function callGeminiVision(prompt,imageBase64,mimeType='image/jpeg'){
   const key=getKey('gemini_key');
@@ -1836,20 +1856,18 @@ async function buscarReceta(){
   el.innerHTML='<div class="receta-loading">🔍 Buscando receta...</div>';
   const stockList=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase());
   try{
-    const text=await callGroq(
-      'Dame la receta completa de: "'+query+'".\n'+
-      'Tengo en casa: '+stockList.join(', ')+'\n\n'+
-      'Respondé SOLO en JSON sin backticks:\n'+
-      '{'+
-        '"nombre":"nombre de la receta",'+
-        '"porciones":4,'+
-        '"tiempo_prep":"30 min",'+
-        '"dificultad":"fácil/media/difícil",'+
-        '"ingredientes":[{"nombre":"...","cantidad":"...","tengo":true,"esencial":true}],'+
-        '"pasos":["paso 1...","paso 2..."],'+
-        '"tip":"consejo opcional"'+
-      '}'
-    );
+    const recipePrompt='Dame la receta completa de: "'+query+'".\nTengo en casa: '+stockList.join(', ')+'\n\nRespondé SOLO en JSON sin backticks:\n{"nombre":"...","porciones":4,"tiempo_prep":"30 min","dificultad":"fácil/media/difícil","ingredientes":[{"nombre":"...","cantidad":"...","tengo":true,"esencial":true}],"pasos":["paso 1...","paso 2..."],"tip":"consejo opcional"}';
+    let text;
+    try{
+      if(getKey('gemini_key')){
+        text=await callGeminiText(recipePrompt);
+      } else {
+        text=await callGroq(recipePrompt);
+      }
+    }catch(e){
+      // fallback to Groq
+      text=await callGroq(recipePrompt);
+    }
     const r=JSON.parse(text.replace(/```json|```/g,'').trim());
     const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);
     const tengo=(r.ingredientes||[]).filter(i=>i.tengo);
