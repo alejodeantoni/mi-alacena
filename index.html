@@ -291,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.3.6</div>
+  <div class="ver">v9.4.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -637,13 +637,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="duplicadosSuggest" style="display:none;margin-top:6px;border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--card)"></div>
   </div>
   <div class="row2">
-    <div class="field"><label>Categoría</label><select id="fCat">
-      <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
-      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
-      <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
-      <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
-      <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
-    </select></div>
+    <div class="field"><label>Categoría</label>
+      <div style="display:flex;gap:6px">
+        <select id="fCat" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none"></select>
+        <button onclick="abrirNuevaCat('fCat')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text2);cursor:pointer;font-size:14px;white-space:nowrap">+ Nueva</button>
+      </div>
+    </div>
     <div class="field"><label>Unidad</label>
       <select id="fUnidad"><option>unid</option><option>kg</option><option>g</option><option>L</option><option>ml</option></select>
     </div>
@@ -671,13 +670,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="modal-header"><div class="modal-title">Editar producto</div></div>
   <div class="field"><label>Nombre</label><input id="ecNombre"/></div>
   <div class="row2">
-    <div class="field"><label>Categoría</label><select id="ecCat">
-      <option>Lácteos</option><option>Carnes y aves</option><option>Pescados</option><option>Fiambres</option>
-      <option>Fiambres al vacío</option><option>Pastas caseras</option><option>Salsas</option>
-      <option>Verduras</option><option>Frutas</option><option>Bebidas</option><option>Harinas y cereales</option>
-      <option>Arroz y pastas</option><option>Aceites</option><option>Conservas</option><option>Snacks</option>
-      <option>Especias</option><option>Congelados</option><option>Limpieza</option><option>Otros</option>
-    </select></div>
+    <div class="field"><label>Categoría</label>
+      <div style="display:flex;gap:6px">
+        <select id="ecCat" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none"></select>
+        <button onclick="abrirNuevaCat('ecCat')" style="padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text2);cursor:pointer;font-size:14px;white-space:nowrap">+ Nueva</button>
+      </div>
+    </div>
     <div class="field"><label>Unidad</label>
       <select id="ecUnidad"><option>unid</option><option>kg</option><option>g</option><option>L</option><option>ml</option></select>
     </div>
@@ -905,7 +903,7 @@ let binId=localStorage.getItem('jsonbin_bin_id')||getKey('jsonbin_bin');
 function scheduleSync(){if(syncTimeout)clearTimeout(syncTimeout);syncTimeout=setTimeout(pushToCloud,1500);}
 async function pushToCloud(){
   if(isSyncing)return;isSyncing=true;showSyncStatus('⏫ Guardando...');
-  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),especias:loadEspecias(),misRecetas:loadMisRecetas(),ts:Date.now(),
+  const data={catalog:loadCatalog(),stock:loadStock(),compras:loadCompras(),hist:loadHist(),chat:loadChat(),especias:loadEspecias(),misRecetas:loadMisRecetas(),customCats:loadCustomCats(),ts:Date.now(),
     cfg:{groq:getKey('groq_key'),gemini:getKey('gemini_key')}};
   try{
     if(!binId){
@@ -938,6 +936,7 @@ async function pullFromCloud(){
       // Restore keys from cloud if not set locally
       if(data.especias)localStorage.setItem('especias',JSON.stringify(data.especias));
       if(data.misRecetas)localStorage.setItem('misRecetas',JSON.stringify(data.misRecetas));
+      if(data.customCats)localStorage.setItem('customCats',JSON.stringify(data.customCats));
       if(data.cfg){
         if(data.cfg.groq&&!getKey('groq_key'))localStorage.setItem('cfg_groq_key',data.cfg.groq);
         if(data.cfg.gemini&&!getKey('gemini_key'))localStorage.setItem('cfg_gemini_key',data.cfg.gemini);
@@ -1641,7 +1640,8 @@ function clearEcEmoji(){
 
 function openEditCatModal(id){
   editingCatId=id;const p=loadCatalog().find(x=>x.id===id);if(!p)return;
-  document.getElementById('ecNombre').value=p.nombre;document.getElementById('ecCat').value=p.cat;
+  document.getElementById('ecNombre').value=p.nombre;
+  populateCatSelect('ecCat',p.cat);
   document.getElementById('ecUnidad').value=p.unidad||'unid';document.getElementById('ecNota').value=p.nota||'';
   document.getElementById('ecReminder').value=p.reminder||0;
   document.getElementById('ecTienda').value=p.tienda||'';
@@ -1683,6 +1683,7 @@ function openAddModal(){
   document.getElementById('barcodePreview').style.display='none';document.getElementById('manualBarcodeWrap').style.display='none';
   document.getElementById('barcodeStatus').className='ai-status';document.getElementById('uploadPreview').style.display='none';
   document.getElementById('uploadLabel').style.display='block';document.getElementById('aiStatus').className='ai-status';
+  populateCatSelect('fCat','Lácteos');
   currentProductImg='';const aip=document.getElementById('addImgPreview');if(aip)aip.innerHTML='📦';const ds=document.getElementById('duplicadosSuggest');if(ds)ds.style.display='none';document.getElementById('fNombre').value='';setAddMethod('barcode');document.getElementById('addModalBg').classList.add('open');
 }
 function closeAddModal(){document.getElementById('addModalBg').classList.remove('open');}
@@ -3114,8 +3115,43 @@ function saveTabOrder(){
   const order=[...tabs.querySelectorAll('.loc-tab')].map(t=>t.id);
   localStorage.setItem('tab_order',JSON.stringify(order));
 }
+// CUSTOM CATEGORIES
+const BASE_CATS=["Lácteos", "Carnes y aves", "Pescados", "Fiambres", "Fiambres al vacío", "Pastas caseras", "Salsas", "Verduras", "Frutas", "Bebidas", "Harinas y cereales", "Arroz y pastas", "Aceites", "Conservas", "Snacks", "Especias", "Congelados", "Limpieza", "Otros"];
+function loadCustomCats(){return JSON.parse(localStorage.getItem('customCats')||'[]');}
+function saveCustomCats(c){localStorage.setItem('customCats',JSON.stringify(c));scheduleSync();}
+function getAllCats(){return [...BASE_CATS,...loadCustomCats()];}
+
+function populateCatSelect(selectId, selectedVal){
+  const el=document.getElementById(selectId);
+  if(!el)return;
+  const cats=getAllCats();
+  el.innerHTML=cats.map(c=>'<option'+(c===selectedVal?' selected':'')+'>'+c+'</option>').join('');
+}
+
+function abrirNuevaCat(selectId){
+  const nombre=prompt('Nombre de la nueva categoría:');
+  if(!nombre||!nombre.trim())return;
+  const n=nombre.trim();
+  const custom=loadCustomCats();
+  if(getAllCats().includes(n)){toast('Ya existe esa categoría');return;}
+  custom.push(n);
+  saveCustomCats(custom);
+  // Update ALL_CATS with new emoji
+  ALL_CATS[n]='📦';
+  COLORS[n]='#F1EFE8';
+  populateCatSelect(selectId, n);
+  // Update both selects if open
+  ['fCat','ecCat'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.options.length>0)populateCatSelect(id, id===selectId?n:el.value);
+  });
+  toast('Categoría "'+n+'" creada ✅');
+}
+
 function toast(msg){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='toast';el.textContent=msg;wrap.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},2200);}
 
+// Load custom categories into ALL_CATS on startup
+loadCustomCats().forEach(c=>{if(!ALL_CATS[c]){ALL_CATS[c]='📦';COLORS[c]='#F1EFE8';}});
 // cleanStockData removed - stockMin should persist even when qty=0
 
 // INIT
