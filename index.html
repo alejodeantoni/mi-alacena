@@ -269,6 +269,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .misrec-steps{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-line;margin-top:6px}
 .misrec-tip{margin-top:10px;padding:10px 12px;background:#FEF3E2;border-left:3px solid #E8A020;border-radius:0 8px 8px 0;font-size:12px;color:#7A4010}
 .sub-tab.active.misrec{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
+.sub-tab.active.dash{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
+.dash-alert{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.dash-alert-icon{font-size:28px;flex-shrink:0}
+.dash-alert-body{flex:1}
+.dash-alert-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.dash-alert-sub{font-size:12px;color:var(--text2);line-height:1.5}
+.dash-alert.warn{border-color:#E8A020;background:#FEF3E2}
+.dash-alert.danger{border-color:#E24B4A;background:#FCEBEB}
+.dash-alert.ok{border-color:#1D9E75;background:#EAF3DE}
+.dash-alert.info{border-color:#378ADD;background:#deeefb}
+.dash-section{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px}
+.dash-recipe-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.dash-recipe-card:active{background:var(--bg3)}
+@keyframes scanLine{0%{top:10%}50%{top:85%}100%{top:10%}}
+.scan-line{position:absolute;left:20%;right:20%;height:2px;background:rgba(55,138,221,.8);box-shadow:0 0 8px rgba(55,138,221,.8);animation:scanLine 2s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -291,7 +306,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.4.0</div>
+  <div class="ver">v9.5.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -306,7 +321,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="main-tab" id="mt-mas" onclick="setMainTab('mas')">☰<span>Más</span></button>
 </div>
 <div class="sub-tabs" id="subTabsStock">
-  <button class="sub-tab active h" id="lt-h" onclick="setLoc('h')"><span>🧊</span>Heladera</button>
+  <button class="sub-tab dash active" id="lt-dash" onclick="setLoc('dash')"><span>🏠</span>Inicio</button>
+  <button class="sub-tab h" id="lt-h" onclick="setLoc('h')"><span>🧊</span>Heladera</button>
   <button class="sub-tab f" id="lt-f" onclick="setLoc('f')"><span>❄️</span>Freezer</button>
   <button class="sub-tab d" id="lt-d" onclick="setLoc('d')"><span>🫙</span>Despensa</button>
   <button class="sub-tab esp" id="lt-esp" onclick="setLoc('esp')"><span>🌶️</span>Especias</button>
@@ -331,6 +347,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="nav-tab h" id="nt-venc" onclick="setNav('venc')">Vencim.</button>
   <button class="nav-tab h" id="nt-rec" onclick="setNav('rec')">Recetas</button>
   <button class="nav-tab h" id="nt-stats" onclick="setNav('stats')">Stats</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="sc-dash" class="screen" style="display:none;padding-bottom:90px">
+  <div id="dashContent"></div>
 </div>
 
 <!-- INVENTARIO -->
@@ -591,6 +612,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div><!-- end .app -->
 
 <button class="fab h" id="fab" onclick="onFabClick()" title="Agregar">+</button>
+
+<!-- BARCODE SCANNER MODAL -->
+<div class="modal-bg" id="scannerModalBg" onclick="if(event.target===this)closeBarcodeScanner()">
+<div class="modal" style="padding:0;border-radius:20px 20px 0 0;overflow:hidden">
+  <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;background:var(--card);border-bottom:1px solid var(--border)">
+    <div style="font-size:16px;font-weight:600;color:var(--text);flex:1">📷 Escaneá el código</div>
+    <button onclick="closeBarcodeScanner()" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>
+  </div>
+  <div style="position:relative;background:#000;width:100%;aspect-ratio:4/3;max-height:60vh">
+    <video id="scannerVideo" style="width:100%;height:100%;object-fit:cover" playsinline autoplay muted></video>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <div style="width:60%;aspect-ratio:1;border:3px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div>
+    </div>
+    <div id="scannerStatus" style="position:absolute;bottom:12px;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.8)">Apuntá al código de barras</div>
+  </div>
+  <div style="padding:14px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="scannerManualInput" type="number" placeholder="O ingresá el código manualmente" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <button onclick="lookupManualBarcodeScan()" style="padding:9px 14px;border:none;border-radius:10px;background:#3A7A1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Buscar</button>
+    </div>
+  </div>
+</div>
+</div>
 
 <!-- ADD CATALOG MODAL -->
 <div class="modal-bg" id="addModalBg" onclick="closeAddModalBg(event)">
@@ -1190,7 +1234,7 @@ function setMainTab(tab){
   document.getElementById('subTabsRecetas').style.display=tab==='recetas'?'flex':'none';
   document.getElementById('subTabsMas').style.display=tab==='mas'?'flex':'none';
   // Navigate to default sub-tab
-  if(tab==='stock')setLoc(loc&&['h','f','d','cat','esp'].includes(loc)?loc:'h');
+  if(tab==='stock')setLoc(loc&&['h','f','d','cat','esp','dash'].includes(loc)?loc:'dash');
   else if(tab==='compras')setLoc('comp');
   else if(tab==='recetas')setLoc('rec2');
   else if(tab==='mas')setLoc('hist');
@@ -1199,7 +1243,7 @@ function setMainTab(tab){
 function setLoc(l){
   loc=l;currentCat='Todos';
   // Update sub-tab active states
-  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp','misrec'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp','misrec','dash'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el){
       el.classList.toggle('active',x===l);
@@ -1241,11 +1285,12 @@ function setLoc(l){
     }
     else if(l==='misrec'){showScreens(['misrec']);renderMisRecetas();}
   }
+  if(l==='dash'){showScreens(['dash']);renderDashboard();return;}
   if(invLocs.includes(l))renderAll();
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super','misrec'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super','misrec','dash'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -2996,6 +3041,90 @@ function renderMisRecetas(){
   });
 }
 
+// DASHBOARD
+async function renderDashboard(){
+  const el=document.getElementById('dashContent');
+  if(!el)return;
+  const all=getAllStocked();
+  const catalog=loadCatalog();
+  const compras=loadCompras().filter(c=>!c.done);
+  const hist=loadHist();
+  const misRec=loadMisRecetas();
+
+  // Alerts
+  const vencidos=all.filter(i=>i.venc&&daysLeft(i.venc)<0);
+  const hoy=all.filter(i=>i.venc&&daysLeft(i.venc)===0);
+  const pronto=all.filter(i=>i.venc&&daysLeft(i.venc)>0&&daysLeft(i.venc)<=3);
+  const bajoStock=all.filter(i=>i.stockMin>0&&i.qty<i.stockMin);
+  const abiertos=all.filter(i=>i.abierto);
+
+  // Stats
+  const totalH=getLocItems('h').length,totalF=getLocItems('f').length,totalD=getLocItems('d').length;
+
+  // Recetas que puedo hacer hoy
+  const recetasHoy=misRec.filter(r=>{
+    const sc=checkStockParaReceta(r.ingredientes||[]);
+    return sc.every(s=>s.tengo);
+  }).slice(0,3);
+
+  // Consumo reciente
+  const hace7=new Date();hace7.setDate(hace7.getDate()-7);
+  const cons7=hist.filter(h=>h.accion==='consumido'&&new Date(h.ts)>=hace7).length;
+
+  let out='';
+
+  // Welcome header
+  const p=getProfile();
+  const hora=new Date().getHours();
+  const saludo=hora<12?'Buenos días':hora<18?'Buenas tardes':'Buenas noches';
+  out+='<div style="margin-bottom:16px"><div style="font-size:20px;font-weight:700;color:var(--text)">'+saludo+(p?' '+p.nombre:'')+'! 👋</div><div style="font-size:13px;color:var(--text2);margin-top:4px">'+new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})+'</div></div>';
+
+  // Quick stats
+  out+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+
+    '<div class="stat h" style="text-align:center"><div class="stat-val h" style="font-size:18px">'+totalH+'</div><div class="stat-lbl">🧊</div></div>'+
+    '<div class="stat f" style="text-align:center"><div class="stat-val f" style="font-size:18px">'+totalF+'</div><div class="stat-lbl">❄️</div></div>'+
+    '<div class="stat d" style="text-align:center"><div class="stat-val d" style="font-size:18px">'+totalD+'</div><div class="stat-lbl">🫙</div></div>'+
+  '</div>';
+
+  // Critical alerts
+  if(vencidos.length){
+    out+='<div class="dash-alert danger"><div class="dash-alert-icon">🗑️</div><div class="dash-alert-body"><div class="dash-alert-title">'+vencidos.length+' producto'+(vencidos.length!==1?'s':'')+' vencido'+(vencidos.length!==1?'s':'')+'</div><div class="dash-alert-sub">'+vencidos.slice(0,3).map(i=>i.nombre).join(', ')+(vencidos.length>3?' y '+(vencidos.length-3)+' más':'')+'</div></div></div>';
+  }
+  if(hoy.length){
+    out+='<div class="dash-alert danger"><div class="dash-alert-icon">⚠️</div><div class="dash-alert-body"><div class="dash-alert-title">Vence HOY</div><div class="dash-alert-sub">'+hoy.map(i=>i.nombre).join(', ')+'</div></div></div>';
+  }
+  if(pronto.length){
+    out+='<div class="dash-alert warn"><div class="dash-alert-icon">⏰</div><div class="dash-alert-body"><div class="dash-alert-title">Vencen en los próximos 3 días</div><div class="dash-alert-sub">'+pronto.map(i=>i.nombre+' ('+daysLeft(i.venc)+'d)').join(', ')+'</div></div></div>';
+  }
+  if(bajoStock.length){
+    out+='<div class="dash-alert warn"><div class="dash-alert-icon">📉</div><div class="dash-alert-body"><div class="dash-alert-title">'+bajoStock.length+' producto'+(bajoStock.length!==1?'s':'')+' con stock bajo</div><div class="dash-alert-sub">'+bajoStock.slice(0,3).map(i=>i.nombre).join(', ')+'</div></div></div>';
+  }
+  if(compras.length){
+    out+='<div class="dash-alert info" onclick="setMainTab(\'compras\')" style="cursor:pointer"><div class="dash-alert-icon">🛒</div><div class="dash-alert-body"><div class="dash-alert-title">'+compras.length+' ítem'+(compras.length!==1?'s':'')+' para comprar</div><div class="dash-alert-sub">Tocá para ver la lista →</div></div></div>';
+  }
+  if(abiertos.length){
+    out+='<div class="dash-alert warn"><div class="dash-alert-icon">📦</div><div class="dash-alert-body"><div class="dash-alert-title">'+abiertos.length+' paquete'+(abiertos.length!==1?'s':'')+' abierto'+(abiertos.length!==1?'s':'')+'</div><div class="dash-alert-sub">'+abiertos.slice(0,3).map(i=>i.nombre).join(', ')+'</div></div></div>';
+  }
+  if(!vencidos.length&&!hoy.length&&!pronto.length&&!bajoStock.length){
+    out+='<div class="dash-alert ok"><div class="dash-alert-icon">✅</div><div class="dash-alert-body"><div class="dash-alert-title">¡Todo en orden!</div><div class="dash-alert-sub">Sin alertas de vencimiento ni stock bajo.</div></div></div>';
+  }
+
+  // Recetas que puedo hacer
+  if(recetasHoy.length){
+    out+='<div class="dash-section">🍳 Podés cocinar ahora</div>';
+    // recipe cards rendered via DOM above
+  }
+
+  // Consumo reciente
+  out+='<div class="dash-section">📊 Esta semana</div>';
+  out+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">'+
+    '<div class="stat cat"><div class="stat-val cat" style="font-size:18px">'+cons7+'</div><div class="stat-lbl">Consumos</div></div>'+
+    '<div class="stat cat"><div class="stat-val cat" style="font-size:18px">'+catalog.length+'</div><div class="stat-lbl">En catálogo</div></div>'+
+  '</div>';
+
+  el.innerHTML=out;
+}
+
 // HISTORIAL
 function renderHist(){
   const FILTERS=['todos','agregado','consumido','comprado','eliminado'];
@@ -3012,8 +3141,119 @@ function renderHist(){
 }
 function setHistFilter(f){histFilter=f;renderHist();}
 
+// BARCODE SCANNER
+let scannerStream=null;
+let scannerInterval=null;
+
+async function openBarcodeScanner(){
+  document.getElementById('scannerModalBg').classList.add('open');
+  document.getElementById('scannerStatus').textContent='Iniciando cámara...';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    scannerStream=stream;
+    const video=document.getElementById('scannerVideo');
+    video.srcObject=stream;
+    await video.play();
+    document.getElementById('scannerStatus').textContent='Apuntá al código de barras';
+    // Start scanning with BarcodeDetector if available
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
+      scannerInterval=setInterval(async()=>{
+        try{
+          const codes=await detector.detect(video);
+          if(codes.length>0){
+            const code=codes[0].rawValue;
+            document.getElementById('scannerStatus').textContent='✅ Código: '+code;
+            clearInterval(scannerInterval);
+            setTimeout(()=>{closeBarcodeScanner();processScannedCode(code);},400);
+          }
+        }catch(e){}
+      },300);
+    } else {
+      document.getElementById('scannerStatus').textContent='Cámara activa — tomá una foto con el botón de abajo';
+    }
+  }catch(e){
+    document.getElementById('scannerStatus').textContent='❌ Sin acceso a la cámara';
+  }
+}
+
+function closeBarcodeScanner(){
+  if(scannerInterval)clearInterval(scannerInterval);
+  if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());
+  scannerStream=null;scannerInterval=null;
+  document.getElementById('scannerModalBg').classList.remove('open');
+}
+
+async function processScannedCode(code){
+  toast('Buscando producto...');
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v0/product/'+code+'.json');
+    const d=await r.json();
+    if(d.status===1&&d.product){
+      const p=d.product;
+      const nombre=p.product_name_es||p.product_name||'';
+      const img=p.image_small_url||'';
+      const cats=p.categories||'';
+      let cat='Otros';
+      if(/leche|yogur|queso|manteca|crema/i.test(cats+nombre))cat='Lácteos';
+      else if(/pollo|carne|res|cerdo|vacuno/i.test(cats+nombre))cat='Carnes y aves';
+      else if(/pescado|atún|salmón/i.test(cats+nombre))cat='Pescados';
+      else if(/fiambre|jamón|salchicha/i.test(cats+nombre))cat='Fiambres';
+      else if(/verdura|vegetal/i.test(cats+nombre))cat='Verduras';
+      else if(/fruta/i.test(cats+nombre))cat='Frutas';
+      else if(/bebida|agua|gaseosa|jugo/i.test(cats+nombre))cat='Bebidas';
+      else if(/harina|cereal/i.test(cats+nombre))cat='Harinas y cereales';
+      else if(/arroz|pasta|fideos/i.test(cats+nombre))cat='Arroz y pastas';
+      else if(/aceite/i.test(cats+nombre))cat='Aceites';
+      else if(/conserva|lata/i.test(cats+nombre))cat='Conservas';
+      else if(/snack|galleta/i.test(cats+nombre))cat='Snacks';
+      else if(/especia|hierba/i.test(cats+nombre))cat='Especias';
+      // Check if already in catalog
+      const existing=loadCatalog().find(p2=>p2.nombre.toLowerCase()===nombre.toLowerCase());
+      if(existing){
+        toast('Producto encontrado — asignando...');
+        openAssignModal(existing.id);
+        return;
+      }
+      // Open add modal with pre-filled data
+      openAddModal();
+      setTimeout(()=>{
+        document.getElementById('fNombre').value=nombre;
+        populateCatSelect('fCat',cat);
+        if(img)currentProductImg=img;
+        const prev=document.getElementById('addImgPreview');
+        if(prev&&img){prev.innerHTML='<img src="'+img+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';}
+        toast('✅ '+nombre+' encontrado');
+      },300);
+    } else {
+      // Not found - open add modal with code
+      openAddModal();
+      toast('Producto no encontrado — completá manualmente');
+    }
+  }catch(e){toast('Error al buscar producto');}
+}
+
+function lookupManualBarcodeScan(){
+  const code=document.getElementById('scannerManualInput').value.trim();
+  if(!code){toast('Ingresá un código');return;}
+  closeBarcodeScanner();
+  processScannedCode(code);
+}
+
 function onFabClick(){
-  if(loc==='cat')openAddModal();
+  if(loc==='cat'){
+    const sheet=document.createElement('div');
+    sheet.id='addSheet';
+    sheet.style.cssText='position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--modal);border-radius:20px 20px 0 0;padding:1rem;z-index:25;box-shadow:0 -4px 20px rgba(0,0,0,.2)';
+    function removeSheet(){const s=document.getElementById('addSheet');if(s)s.remove();}
+    const drag=document.createElement('div');drag.style.cssText='width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px';
+    const title=document.createElement('div');title.style.cssText='font-size:15px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:center';title.textContent='Agregar producto';
+    const b1=document.createElement('button');b1.style.cssText='width:100%;padding:14px;border:none;border-radius:12px;background:#378ADD;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px';b1.textContent='📷 Escanear código de barras';b1.onclick=function(){removeSheet();openBarcodeScanner();};
+    const b2=document.createElement('button');b2.style.cssText='width:100%;padding:14px;border:1px solid var(--border2);border-radius:12px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;margin-bottom:8px';b2.textContent='✏️ Agregar manualmente';b2.onclick=function(){removeSheet();openAddModal();};
+    const b3=document.createElement('button');b3.style.cssText='width:100%;padding:10px;border:none;background:transparent;color:var(--text3);font-size:14px;cursor:pointer';b3.textContent='Cancelar';b3.onclick=removeSheet;
+    sheet.appendChild(drag);sheet.appendChild(title);sheet.appendChild(b1);sheet.appendChild(b2);sheet.appendChild(b3);
+    document.body.appendChild(sheet);
+  }
   else if(loc==='comp')addCompra();
   else if(loc==='chat')document.getElementById('chatInput').focus();
   else openAddModal();
