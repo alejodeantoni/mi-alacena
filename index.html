@@ -308,7 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.7</div>
+  <div class="ver">v9.6.8</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1436,8 +1436,13 @@ function changeQty(catId,l,delta){
   const p=getProfile();
   stock[catId][l].lastBy=p?.name||null;
   // Auto-mark as abierto when consuming from a whole package
-  if(delta<0&&qtyNueva>0&&!stock[catId][l].abierto){
-    // Check if the qty antes was a round/whole number (typical of packaged goods)
+  // Only for categories that come in packages/boxes, not loose items
+  const CATS_PAQUETE=['Lácteos','Fiambres','Fiambres al vacío','Bebidas','Harinas y cereales',
+    'Arroz y pastas','Aceites','Conservas','Snacks','Especias','Congelados','Limpieza',
+    'Pastas caseras','Salsas'];
+  const catProd=loadCatalog().find(p=>p.id===catId);
+  const esPaquete=catProd&&CATS_PAQUETE.includes(catProd.cat);
+  if(delta<0&&qtyNueva>0&&!stock[catId][l].abierto&&esPaquete){
     const esEntero=Number.isInteger(qtyAntes)||(qtyAntes*10)%10===0;
     if(esEntero){
       stock[catId][l].abierto=true;
