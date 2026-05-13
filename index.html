@@ -306,7 +306,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.0</div>
+  <div class="ver">v9.6.1</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -546,8 +546,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="sc-super" class="screen" style="display:none">
   <div class="card">
     <div class="section-lbl" style="margin-bottom:8px">Escaneá o buscá lo que compraste</div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button onclick="escanearTicket()" style="width:100%;padding:10px;border:none;border-radius:10px;background:#C87820;color:#fff;font-size:14px;font-weight:600;cursor:pointer">🧾 Escanear ticket con IA</button>
+    </div>
+    <div id="ticketResult" style="display:none;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <input id="superSearch" placeholder="Buscar producto..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" oninput="renderSuperList()">
+      <input id="superSearch"  placeholder="Buscar producto..." style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none" oninput="renderSuperList()">
       <button onclick="openSuperBarcode()" style="padding:9px 14px;border:none;border-radius:10px;background:#F9A825;color:#fff;font-size:18px;cursor:pointer">▦</button>
     </div>
     <div id="superList"></div>
@@ -2373,6 +2377,111 @@ let cocinandoQtys={};
 
 function renderRapido(){
   renderSuperList();
+}
+
+async function escanearTicket(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.capture='environment';
+  input.onchange=async function(){
+    const file=input.files[0];if(!file)return;
+    const resultEl=document.getElementById('ticketResult');
+    resultEl.style.display='block';
+    resultEl.innerHTML='<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text2)">🔍 Leyendo ticket...</div>';
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      const base64=e.target.result.split(',')[1];
+      try{
+        const catalog=loadCatalog();
+        const catNames=catalog.map(p=>p.nombre).join(', ');
+        const text=await callGeminiVision(
+          'Este es un ticket/factura de compras. Extraé todos los productos comprados con su cantidad y precio unitario si se ve.'+
+          '\nProductos que ya tengo en mi catálogo: '+catNames+
+          '\nSOLO responde en JSON sin backticks:\n'+
+          '{"productos":[{"nombre":"...","cantidad":1,"unidad":"unid","precio":null,"en_catalogo":false}]}'+
+          '\nPara "en_catalogo" ponés true si el nombre es igual o muy similar a alguno de mi catálogo.',
+          base64, file.type||'image/jpeg'
+        );
+        const data=JSON.parse(text.replace(/```json|```/g,'').trim());
+        const prods=data.productos||[];
+        if(!prods.length){
+          resultEl.innerHTML='<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text2)">No se detectaron productos en el ticket.</div>';
+          return;
+        }
+
+        // Build result UI
+        const wrap=document.createElement('div');
+        wrap.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden';
+
+        const hdr=document.createElement('div');
+        hdr.style.cssText='padding:12px 14px;background:#FEF3E2;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between';
+        hdr.innerHTML='<div><div style="font-size:14px;font-weight:600;color:var(--text)">🧾 '+prods.length+' productos detectados</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Seleccioná los que querés agregar al stock</div></div>';
+        const selAll=document.createElement('button');
+        selAll.style.cssText='padding:5px 10px;border:none;border-radius:8px;background:#C87820;color:#fff;font-size:12px;cursor:pointer;font-weight:600';
+        selAll.textContent='Todos ✓';
+        selAll.onclick=function(){wrap.querySelectorAll('.ticket-check').forEach(c=>c.checked=true);};
+        hdr.appendChild(selAll);
+        wrap.appendChild(hdr);
+
+        const list=document.createElement('div');
+        prods.forEach((p,i)=>{
+          // Try to match with catalog
+          const catMatch=catalog.find(c=>c.nombre.toLowerCase().includes(p.nombre.toLowerCase().split(' ')[0])||p.nombre.toLowerCase().includes(c.nombre.toLowerCase().split(' ')[0]));
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bg4)';
+          const chk=document.createElement('input');chk.type='checkbox';chk.className='ticket-check';chk.id='tc_'+i;
+          chk.checked=!!catMatch;chk.style.cssText='width:18px;height:18px;cursor:pointer;flex-shrink:0';
+          const lbl=document.createElement('label');lbl.htmlFor='tc_'+i;lbl.style.cssText='flex:1;cursor:pointer';
+          const nm=document.createElement('div');nm.style.cssText='font-size:14px;color:var(--text)';nm.textContent=p.nombre;
+          const sub=document.createElement('div');sub.style.cssText='font-size:11px;color:var(--text2);margin-top:2px';
+          sub.textContent=(p.cantidad&&p.cantidad!==1?p.cantidad+' '+( p.unidad||'unid'):'')+(p.precio?' · $'+p.precio:'')+(catMatch?' · ✓ En catálogo':'');
+          lbl.appendChild(nm);lbl.appendChild(sub);
+          // Qty input
+          const qty=document.createElement('input');qty.type='number';qty.value=p.cantidad||1;qty.min=0.1;qty.step=0.1;
+          qty.id='tq_'+i;
+          qty.style.cssText='width:55px;font-size:13px;padding:4px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);text-align:center';
+          row.appendChild(chk);row.appendChild(lbl);row.appendChild(qty);
+          list.appendChild(row);
+        });
+        wrap.appendChild(list);
+
+        // Confirm button
+        const confirmBtn=document.createElement('button');
+        confirmBtn.style.cssText='width:100%;padding:14px;border:none;background:#1D9E75;color:#fff;font-size:14px;font-weight:600;cursor:pointer';
+        confirmBtn.textContent='✅ Agregar seleccionados al changuito';
+        confirmBtn.onclick=function(){
+          let agregados=0;
+          prods.forEach((p,i)=>{
+            const chk=document.getElementById('tc_'+i);
+            const qty=parseFloat(document.getElementById('tq_'+i)?.value)||1;
+            if(!chk||!chk.checked)return;
+            const catMatch=catalog.find(c=>
+              c.nombre.toLowerCase().includes(p.nombre.toLowerCase().split(' ')[0])||
+              p.nombre.toLowerCase().includes(c.nombre.toLowerCase().split(' ')[0])
+            );
+            if(catMatch){
+              superCart=loadSuperCart();
+              superCart[catMatch.id]={nombre:catMatch.nombre,qty,loc:'d',unidad:catMatch.unidad,catId:catMatch.id};
+              saveSuperCart(superCart);
+              agregados++;
+            }
+          });
+          toast('✅ '+agregados+' productos agregados al changuito');
+          resultEl.style.display='none';
+          renderSuperList();
+          renderSuperCart();
+        };
+        wrap.appendChild(confirmBtn);
+
+        resultEl.innerHTML='';
+        resultEl.appendChild(wrap);
+
+      }catch(err){
+        resultEl.innerHTML='<div style="padding:12px;background:#FCEBEB;border-radius:10px;font-size:13px;color:#791F1F">❌ '+(err.message.includes('Configurá')?err.message:'No se pudo leer el ticket. Asegurate de tener la Gemini API key configurada.')+'</div>';
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
 }
 
 function renderSuperList(){
