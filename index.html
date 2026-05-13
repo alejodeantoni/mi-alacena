@@ -270,7 +270,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .misrec-tip{margin-top:10px;padding:10px 12px;background:#FEF3E2;border-left:3px solid #E8A020;border-radius:0 8px 8px 0;font-size:12px;color:#7A4010}
 .sub-tab.active.misrec{background:#FEF0E0;border-color:#C87820;color:#7A4010;font-weight:600}
 .sub-tab.active.dash{background:#deeefb;border-color:#378ADD;color:#185FA5;font-weight:600}
-.dash-alert{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.dash-alert{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;transition:opacity .15s}
+.dash-alert[style*="cursor:pointer"]:active{opacity:0.7}
 .dash-alert-icon{font-size:28px;flex-shrink:0}
 .dash-alert-body{flex:1}
 .dash-alert-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
@@ -307,7 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.3</div>
+  <div class="ver">v9.6.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3398,28 +3399,64 @@ async function renderDashboard(){
     '<div class="stat d" style="text-align:center"><div class="stat-val d" style="font-size:18px">'+totalD+'</div><div class="stat-lbl">🫙</div></div>'+
   '</div>';
 
-  // Critical alerts
-  if(vencidos.length){
-    out+='<div class="dash-alert danger"><div class="dash-alert-icon">🗑️</div><div class="dash-alert-body"><div class="dash-alert-title">'+vencidos.length+' producto'+(vencidos.length!==1?'s':'')+' vencido'+(vencidos.length!==1?'s':'')+'</div><div class="dash-alert-sub">'+vencidos.slice(0,3).map(i=>i.nombre).join(', ')+(vencidos.length>3?' y '+(vencidos.length-3)+' más':'')+'</div></div></div>';
+  // Build expandable alert cards using DOM
+  function makeDashAlert(tipo, icon, titulo, items, subtitulo){
+    const card=document.createElement('div');
+    card.className='dash-alert '+tipo;
+    card.style.cssText='cursor:pointer;flex-direction:column;align-items:stretch;padding:0;overflow:hidden';
+    // Header row
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;gap:12px;padding:14px';
+    const ic=document.createElement('div');ic.className='dash-alert-icon';ic.textContent=icon;
+    const body=document.createElement('div');body.className='dash-alert-body';
+    body.innerHTML='<div class="dash-alert-title">'+titulo+'</div>'+
+      (subtitulo?'<div class="dash-alert-sub">'+subtitulo+'</div>':'');
+    const chev=document.createElement('div');chev.style.cssText='font-size:14px;color:var(--text3);transition:transform .2s;flex-shrink:0';chev.textContent='▼';
+    hdr.appendChild(ic);hdr.appendChild(body);hdr.appendChild(chev);
+    card.appendChild(hdr);
+    // Product list (hidden by default)
+    const list=document.createElement('div');
+    list.style.cssText='display:none;border-top:1px solid rgba(0,0,0,.08);padding:8px 14px 12px';
+    items.forEach(function(item){
+      const locIcon={h:'🧊',f:'❄️',d:'🫙'}[item.loc]||'';
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)';
+      row.innerHTML='<div style="width:32px;height:32px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0">'+(item.img?'<img src="'+item.img+'" style="width:100%;height:100%;object-fit:cover">':(item.emoji||ALL_CATS[item.cat]||'📦'))+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.nombre+'</div>'+
+        '<div style="font-size:11px;color:var(--text2)">'+locIcon+' '+item.qty+' '+item.unidad+(item.venc?' · '+getBadge(item.venc):'')+'</div></div>'+
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    // Toggle on click
+    hdr.onclick=function(){
+      const open=list.style.display!=='none';
+      list.style.display=open?'none':'block';
+      chev.style.transform=open?'':'rotate(180deg)';
+    };
+    return card;
   }
-  if(hoy.length){
-    out+='<div class="dash-alert danger"><div class="dash-alert-icon">⚠️</div><div class="dash-alert-body"><div class="dash-alert-title">Vence HOY</div><div class="dash-alert-sub">'+hoy.map(i=>i.nombre).join(', ')+'</div></div></div>';
-  }
-  if(pronto.length){
-    out+='<div class="dash-alert warn"><div class="dash-alert-icon">⏰</div><div class="dash-alert-body"><div class="dash-alert-title">Vencen en los próximos 3 días</div><div class="dash-alert-sub">'+pronto.map(i=>i.nombre+' ('+daysLeft(i.venc)+'d)').join(', ')+'</div></div></div>';
-  }
-  if(bajoStock.length){
-    out+='<div class="dash-alert warn"><div class="dash-alert-icon">📉</div><div class="dash-alert-body"><div class="dash-alert-title">'+bajoStock.length+' producto'+(bajoStock.length!==1?'s':'')+' con stock bajo</div><div class="dash-alert-sub">'+bajoStock.slice(0,3).map(i=>i.nombre).join(', ')+'</div></div></div>';
-  }
+
+  const alertEl=document.createElement('div');
+  if(vencidos.length) alertEl.appendChild(makeDashAlert('danger','🗑️',vencidos.length+' producto'+(vencidos.length!==1?'s':'')+' vencido'+(vencidos.length!==1?'s':''),vencidos,'Tocá para ver'));
+  if(hoy.length) alertEl.appendChild(makeDashAlert('danger','⚠️','Vence HOY',hoy,hoy.map(i=>i.nombre).join(', ')));
+  if(pronto.length) alertEl.appendChild(makeDashAlert('warn','⏰','Vencen en 3 días',pronto,pronto.map(i=>i.nombre+' ('+daysLeft(i.venc)+'d)').join(', ')));
+  if(bajoStock.length) alertEl.appendChild(makeDashAlert('warn','📉',bajoStock.length+' con stock bajo',bajoStock,bajoStock.slice(0,3).map(i=>i.nombre).join(', ')+(bajoStock.length>3?' +más':'')));
   if(compras.length){
-    out+='<div class="dash-alert info" onclick="setMainTab(\'compras\')" style="cursor:pointer"><div class="dash-alert-icon">🛒</div><div class="dash-alert-body"><div class="dash-alert-title">'+compras.length+' ítem'+(compras.length!==1?'s':'')+' para comprar</div><div class="dash-alert-sub">Tocá para ver la lista →</div></div></div>';
+    const ca=makeDashAlert('info','🛒',compras.length+' ítem'+(compras.length!==1?'s':'')+' para comprar',[],null);
+    // For compras show list items not products
+    const cl=ca.querySelector('div:last-child');
+    cl.style.cssText='display:none;border-top:1px solid rgba(0,0,0,.08);padding:8px 14px 12px';
+    compras.slice(0,8).forEach(function(c){
+      const r=document.createElement('div');r.style.cssText='font-size:13px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);color:var(--text)';r.textContent='• '+c.nombre;cl.appendChild(r);
+    });
+    if(compras.length>8){const m=document.createElement('div');m.style.cssText='font-size:12px;color:var(--text3);padding-top:4px';m.textContent='...y '+(compras.length-8)+' más';cl.appendChild(m);}
+    alertEl.appendChild(ca);
   }
-  if(abiertos.length){
-    out+='<div class="dash-alert warn"><div class="dash-alert-icon">📦</div><div class="dash-alert-body"><div class="dash-alert-title">'+abiertos.length+' paquete'+(abiertos.length!==1?'s':'')+' abierto'+(abiertos.length!==1?'s':'')+'</div><div class="dash-alert-sub">'+abiertos.slice(0,3).map(i=>i.nombre).join(', ')+'</div></div></div>';
-  }
+  if(abiertos.length) alertEl.appendChild(makeDashAlert('warn','📦',abiertos.length+' paquete'+(abiertos.length!==1?'s':'')+' abierto'+(abiertos.length!==1?'s':''),abiertos,abiertos.slice(0,3).map(i=>i.nombre).join(', ')+(abiertos.length>3?' +más':'')));
   if(!vencidos.length&&!hoy.length&&!pronto.length&&!bajoStock.length){
     out+='<div class="dash-alert ok"><div class="dash-alert-icon">✅</div><div class="dash-alert-body"><div class="dash-alert-title">¡Todo en orden!</div><div class="dash-alert-sub">Sin alertas de vencimiento ni stock bajo.</div></div></div>';
   }
+  out+='ALERT_PLACEHOLDER';
 
   // Recetas que puedo hacer
   if(recetasHoy.length){
@@ -3444,6 +3481,15 @@ async function renderDashboard(){
   '</div>';
 
   el.innerHTML=out;
+  // Insert DOM-built alerts
+  const placeholder=el.querySelector('*');
+  const alertContainer=document.createElement('div');
+  alertContainer.innerHTML='';
+  const ph=el.innerHTML.includes('ALERT_PLACEHOLDER');
+  if(ph){
+    el.innerHTML=el.innerHTML.replace('ALERT_PLACEHOLDER','');
+    el.appendChild(alertEl);
+  }
 }
 
 // HISTORIAL
