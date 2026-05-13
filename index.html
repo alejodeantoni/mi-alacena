@@ -308,7 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.8</div>
+  <div class="ver">v9.6.9</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1517,6 +1517,15 @@ function openAssignModal(catId){
   if(tField)tField.style.display=assignQtys.f>0?'block':'none';
   // Restore abierto state
   const wasAbierto=activeStock.abierto||false;
+  isAbierto=wasAbierto;
+  const abChk=document.getElementById('abiertoCheck');
+  if(abChk){
+    abChk.style.background=wasAbierto?'#E8A020':'transparent';
+    abChk.style.borderColor=wasAbierto?'#E8A020':'var(--border2)';
+    abChk.textContent=wasAbierto?'✓':'';
+  }
+  const abDs=document.getElementById('abiertoDateSuggest');
+  if(abDs)abDs.style.display='none';
   aiSuggestedDate=null;
   const aiEl=document.getElementById('aiDateSuggest');
   aiEl.style.display='none';
