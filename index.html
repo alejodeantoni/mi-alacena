@@ -285,6 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes scanLine{0%{top:10%}50%{top:85%}100%{top:10%}}
 .scan-line{position:absolute;left:20%;right:20%;height:2px;background:rgba(55,138,221,.8);box-shadow:0 0 8px rgba(55,138,221,.8);animation:scanLine 2s ease-in-out infinite}
 </style>
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
 
@@ -306,7 +307,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.1</div>
+  <div class="ver">v9.6.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1428,9 +1429,22 @@ function changeQty(catId,l,delta){
   const stock=loadStock();
   if(!stock[catId])stock[catId]={};
   if(!stock[catId][l])stock[catId][l]={qty:0,venc:null,stockMin:0};
-  stock[catId][l].qty=Math.max(0,parseFloat((stock[catId][l].qty+delta*step).toFixed(1)));
+  const qtyAntes=stock[catId][l].qty||0;
+  const qtyNueva=Math.max(0,parseFloat((qtyAntes+delta*step).toFixed(1)));
+  stock[catId][l].qty=qtyNueva;
   const p=getProfile();
   stock[catId][l].lastBy=p?.name||null;
+  // Auto-mark as abierto when consuming from a whole package
+  if(delta<0&&qtyNueva>0&&!stock[catId][l].abierto){
+    // Check if the qty antes was a round/whole number (typical of packaged goods)
+    const esEntero=Number.isInteger(qtyAntes)||(qtyAntes*10)%10===0;
+    if(esEntero){
+      stock[catId][l].abierto=true;
+      toast('📦 Marcado como abierto');
+    }
+  }
+  // If qty reaches 0, unmark as abierto
+  if(qtyNueva===0)stock[catId][l].abierto=false;
   saveStock(stock);
   if(delta<0)addHistEntry(catId,'consumido',Math.abs(delta));
   checkLowStock(catId);renderAll();
@@ -3455,39 +3469,47 @@ let scannerInterval=null;
 async function openBarcodeScanner(){
   document.getElementById('scannerModalBg').classList.add('open');
   document.getElementById('scannerStatus').textContent='Iniciando cámara...';
+  const video=document.getElementById('scannerVideo');
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
-    scannerStream=stream;
-    const video=document.getElementById('scannerVideo');
-    video.srcObject=stream;
-    await video.play();
-    document.getElementById('scannerStatus').textContent='Apuntá al código de barras';
-    // Start scanning with BarcodeDetector if available
-    if('BarcodeDetector' in window){
-      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
-      scannerInterval=setInterval(async()=>{
-        try{
-          const codes=await detector.detect(video);
-          if(codes.length>0){
-            const code=codes[0].rawValue;
-            document.getElementById('scannerStatus').textContent='✅ Código: '+code;
-            clearInterval(scannerInterval);
-            setTimeout(()=>{closeBarcodeScanner();processScannedCode(code);},400);
-          }
-        }catch(e){}
-      },300);
+    // Try ZXing first (works on iOS/Android/Desktop)
+    if(window.ZXing){
+      const codeReader=new ZXing.BrowserMultiFormatReader();
+      scannerCodeReader=codeReader;
+      const devices=await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+      // Prefer back camera
+      const backCam=devices.find(d=>/back|rear|environment/i.test(d.label))||devices[devices.length-1];
+      const deviceId=backCam?.deviceId||undefined;
+      document.getElementById('scannerStatus').textContent='Apuntá al código de barras';
+      // Add scan line animation
+      const scanLine=document.createElement('div');scanLine.className='scan-line';
+      video.parentElement.appendChild(scanLine);
+      codeReader.decodeFromVideoDevice(deviceId,'scannerVideo',(result,err)=>{
+        if(result){
+          const code=result.getText();
+          document.getElementById('scannerStatus').textContent='✅ '+code;
+          scanLine.remove();
+          closeBarcodeScanner();
+          processScannedCode(code);
+        }
+      });
     } else {
-      document.getElementById('scannerStatus').textContent='Cámara activa — tomá una foto con el botón de abajo';
+      // Fallback: native camera stream
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      scannerStream=stream;
+      video.srcObject=stream;
+      await video.play();
+      document.getElementById('scannerStatus').textContent='Apuntá al código — o ingresá el código manualmente abajo';
     }
   }catch(e){
-    document.getElementById('scannerStatus').textContent='❌ Sin acceso a la cámara';
+    document.getElementById('scannerStatus').textContent='❌ '+( e.message||'Sin acceso a la cámara');
   }
 }
 
 function closeBarcodeScanner(){
   if(scannerInterval)clearInterval(scannerInterval);
   if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());
-  scannerStream=null;scannerInterval=null;
+  if(window.scannerCodeReader)try{scannerCodeReader.reset();}catch(e){}
+  scannerStream=null;scannerInterval=null;window.scannerCodeReader=null;
   document.getElementById('scannerModalBg').classList.remove('open');
 }
 
