@@ -306,7 +306,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.5.0</div>
+  <div class="ver">v9.6.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -335,6 +335,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="sub-tabs" id="subTabsRecetas" style="display:none">
   <button class="sub-tab rec2 active" id="lt-rec2" onclick="setLoc('rec2')"><span>✨</span>Sugerencias</button>
   <button class="sub-tab misrec" id="lt-misrec" onclick="setLoc('misrec')"><span>📖</span>Mis recetas</button>
+  <button class="sub-tab" id="lt-plan" onclick="setLoc('plan')" style="color:#7A4010"><span>📅</span>Plan semanal</button>
 </div>
 <div class="sub-tabs" id="subTabsMas" style="display:none">
   <button class="sub-tab chat" id="lt-chat" onclick="setLoc('chat')"><span>💬</span>Chat <span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
@@ -359,6 +360,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="stat-row" id="statsRow"></div>
   <div id="smartAlerts"></div>
   <div id="notifBanner"></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button onclick="abrirFotoInterior()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;white-space:nowrap">📷 Foto interior</button>
+    <div style="flex:1;font-size:11px;color:var(--text3);display:flex;align-items:center">La IA detecta productos</div>
+  </div>
+  <div id="fotoInteriorResult" style="display:none;margin-bottom:10px;padding:10px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text)"></div>
   <div class="search-bar">
     <input id="searchInput" placeholder="Buscar en todo..." oninput="renderInventory()">
     <button class="sort-btn h" id="sortBtn" onclick="toggleSort()">📅 Venc.</button>
@@ -568,6 +574,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div id="espStats" style="margin-bottom:10px"></div>
   <div id="espList"></div>
+</div>
+
+<!-- PLAN SEMANAL -->
+<div id="sc-plan" class="screen" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button onclick="generarPlanSemanal()" id="btnPlan" class="btn-primary" style="flex:1;margin-top:0;background:#C87820">✨ Generar plan con la IA</button>
+  </div>
+  <div id="planContent"><div class="empty" style="padding:2rem"><div style="font-size:36px;margin-bottom:12px">📅</div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Plan semanal vacío</div><div style="font-size:13px;color:var(--text2)">Tocá "Generar plan" y la IA te sugiere 7 cenas basándose en tu stock.</div></div></div>
 </div>
 
 <!-- MIS RECETAS -->
@@ -810,6 +824,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
+  <div class="field">
+    <label>Precio pagado (opcional) <span style="font-size:11px;color:var(--text3)">para calcular costos</span></label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:14px;color:var(--text2)">$</span>
+      <input type="number" id="assignPrecio" min="0" step="0.01" placeholder="0.00" style="flex:1;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+    </div>
+  </div>
   <div class="field" id="tupperField" style="display:none">
     <label>Tupper # <span style="font-size:11px;color:var(--text3)">(posición en el freezer)</span></label>
     <input type="number" id="assignTupper" min="1" max="99" placeholder="Ej: 3" style="font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none;width:100%">
@@ -1243,7 +1264,7 @@ function setMainTab(tab){
 function setLoc(l){
   loc=l;currentCat='Todos';
   // Update sub-tab active states
-  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp','misrec','dash'].forEach(x=>{
+  ['h','f','d','cat','comp','chat','hist','rec2','gstats','super','esp','misrec','dash','plan'].forEach(x=>{
     const el=document.getElementById('lt-'+x);
     if(el){
       el.classList.toggle('active',x===l);
@@ -1284,13 +1305,14 @@ function setLoc(l){
       renderRec2();
     }
     else if(l==='misrec'){showScreens(['misrec']);renderMisRecetas();}
+    else if(l==='plan'){showScreens(['plan']);}
   }
   if(l==='dash'){showScreens(['dash']);renderDashboard();return;}
   if(invLocs.includes(l))renderAll();
 }
 
 function showScreens(active){
-  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super','misrec','dash'].forEach(s=>{
+  ['inv','venc','rec','stats','cat','comp','chat','hist','rec2','gstats','rapido','esp','super','misrec','dash','plan'].forEach(s=>{
     const el=document.getElementById('sc-'+s);
     if(el){el.style.display=active.includes(s)?'block':'none';el.classList.toggle('active',active.includes(s));}
   });
@@ -1462,6 +1484,8 @@ function openAssignModal(catId){
   const maxStockMin=Math.max(...allLocs.map(s=>s.stockMin||0));
   document.getElementById('assignVenc').value=activeStock.venc||'';
   document.getElementById('assignMin').value=maxStockMin||0;
+  const lastPrecio=allLocs.find(s=>s.precio>0)?.precio||0;
+  const precioEl=document.getElementById('assignPrecio');if(precioEl)precioEl.value=lastPrecio||'';
   // Restore tupper number
   const tupperNum=stock[catId]?.f?.tupper||stock[catId]?.h?.tupper||'';
   const tf=document.getElementById('assignTupper');if(tf)tf.value=tupperNum;
@@ -1550,10 +1574,12 @@ function saveAssignment(){
   const min=parseFloat(document.getElementById('assignMin').value)||0;
   const p=getProfile();
   // Save stock — only apply stockMin to locations with qty > 0
+  const precio=parseFloat(document.getElementById('assignPrecio')?.value)||0;
   const tupperNum=document.getElementById('assignTupper')?.value||null;
   ['h','f','d'].forEach(l=>{
     stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto,
-      tupper:(l==='f'||l==='h')&&tupperNum&&assignQtys[l]>0?parseInt(tupperNum):null};
+      tupper:(l==='f'||l==='h')&&tupperNum&&assignQtys[l]>0?parseInt(tupperNum):null,
+      precio:precio>0?precio:null};
   });
   // Save first, then remove any existing auto compra ref for this item (stale)
   localStorage.setItem('stock2',JSON.stringify(stock));
@@ -1562,6 +1588,17 @@ function saveAssignment(){
   // Now re-check with clean data
   checkLowStock(assigningCatId);
   scheduleSync();
+  // Save price history
+  if(precio>0){
+    const cat=loadCatalog();const idx=cat.findIndex(p=>p.id===assigningCatId);
+    if(idx>=0){
+      if(!cat[idx].precios)cat[idx].precios=[];
+      cat[idx].precios.unshift({precio,fecha:new Date().toISOString().split('T')[0],unidad:cat[idx].unidad});
+      cat[idx].precios=cat[idx].precios.slice(0,20); // keep last 20
+      cat[idx].precioActual=precio;
+      saveCatalog(cat);
+    }
+  }
   addHistEntry(assigningCatId,'agregado',0);
   closeAssignModal();renderAll();renderCatalog();renderCompras();toast('Guardado!');
 }
@@ -2245,6 +2282,24 @@ async function buscarReceta(){
       tip.textContent='💡 '+r.tip;
       wrap.appendChild(tip);
     }
+    // Cost estimate
+    const catalog2=loadCatalog();
+    const costoTotal=(r.ingredientes||[]).reduce((sum,ing)=>{
+      const nombre=ing.nombre.toLowerCase();
+      const prod=catalog2.find(p=>p.nombre.toLowerCase().includes(nombre)||nombre.includes(p.nombre.toLowerCase()));
+      if(prod&&prod.precioActual){
+        const cantMatch=ing.cantidad.match(/[\d.,]+/);
+        const cant=cantMatch?parseFloat(cantMatch[0].replace(',','.')):1;
+        return sum+prod.precioActual*cant;
+      }
+      return sum;
+    },0);
+    if(costoTotal>0){
+      const costoDiv=document.createElement('div');
+      costoDiv.style.cssText='margin-top:10px;padding:10px 12px;background:#EAF3DE;border-radius:10px;font-size:13px;color:#27500A;display:flex;align-items:center;gap:8px';
+      costoDiv.innerHTML='💰 <strong>Costo estimado:</strong> $'+costoTotal.toFixed(2)+' <span style="color:var(--text3);font-size:11px">(basado en precios cargados)</span>';
+      wrap.appendChild(costoDiv);
+    }
     const saveBtn=document.createElement('button');saveBtn.className='btn-secondary';saveBtn.style.marginTop='8px';
     saveBtn.textContent='📖 Guardar en Mis Recetas';
     saveBtn.onclick=(function(rec){return function(){guardarRecetaDesdeIA(rec.nombre,rec.ingredientes||[],rec.pasos||[],rec.tip||'');};})(r);
@@ -2566,6 +2621,39 @@ function abrirModoCocinandoById(rid){
 // ============================================================
 // NOTIFICACIONES PUSH REALES
 // ============================================================
+async function abrirFotoInterior(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.capture='environment';
+  input.onchange=async function(){
+    const file=input.files[0];if(!file)return;
+    const resultEl=document.getElementById('fotoInteriorResult');
+    resultEl.style.display='block';resultEl.textContent='🔍 Analizando foto...';
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      const base64=e.target.result.split(',')[1];
+      const locName={h:'heladera',f:'freezer',d:'despensa'}[loc]||'heladera';
+      try{
+        const text=await callGeminiVision(
+          'Mirá esta foto de una '+locName+'. Listá todos los productos de comida que ves. SOLO JSON sin backticks:\n{"productos":["producto 1","producto 2"]}',
+          base64,file.type||'image/jpeg'
+        );
+        const data=JSON.parse(text.replace(/```json|```/g,'').trim());
+        const prods=data.productos||[];
+        if(prods.length){
+          resultEl.innerHTML='<strong>Detecté '+prods.length+' productos:</strong><br>'+prods.map(p=>'• '+p).join('<br>')+
+            '<br><button onclick="this.parentElement.style.display=\'none\'" style="margin-top:8px;padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:transparent;font-size:12px;cursor:pointer">Cerrar</button>';
+        } else {
+          resultEl.textContent='No detecté productos claros en la foto.';
+        }
+      }catch(e){
+        resultEl.textContent='Error: '+(e.message.includes('Configurá')?e.message:'No se pudo analizar la foto');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
 function scheduleVencNotifications(){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   const catalog=loadCatalog();const stock=loadStock();
@@ -2922,6 +3010,42 @@ function eliminarReceta(id){
   renderMisRecetas();toast('Eliminada');
 }
 
+async function generarPlanSemanal(){
+  const btn=document.getElementById('btnPlan');
+  btn.disabled=true;btn.textContent='Generando...';
+  const stockList=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre+' ('+i.qty+' '+i.unidad+')').join(', ');
+  const venc=getAllStocked().filter(i=>i.venc&&daysLeft(i.venc)<=7&&daysLeft(i.venc)>=0).map(i=>i.nombre).join(', ');
+  const misRec=loadMisRecetas().map(r=>r.nombre).join(', ');
+  try{
+    const prompt='Tengo en el stock: '+stockList+'.'+(venc?'\nVencen pronto: '+venc+'. Priorizar estos.':'')+(misRec?'\nRecetas que sé hacer: '+misRec:'')+
+      '\nSugería un plan de cenas para 7 días. Variado, práctico y aprovechando lo que tengo.'+
+      '\nSOLO JSON sin backticks:\n[{"dia":"Lunes","cena":"...","ingredientes_principales":["..."],"tiempo":"30 min"}]';
+    let text;
+    try{text=await callGeminiText(prompt);}catch(e){text=await callGroq(prompt);}
+    const plan=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const dias=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    const el=document.getElementById('planContent');
+    el.innerHTML='';
+    plan.forEach((d,i)=>{
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start';
+      const dayBadge=document.createElement('div');
+      dayBadge.style.cssText='width:44px;height:44px;border-radius:10px;background:#FEF3E2;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#C87820;flex-shrink:0;text-align:center;line-height:1.2';
+      dayBadge.textContent=(d.dia||dias[i]||'Día '+(i+1)).substring(0,3).toUpperCase();
+      const info=document.createElement('div');info.style.flex='1';
+      const cena=document.createElement('div');cena.style.cssText='font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px';cena.textContent='🍽️ '+d.cena;
+      const ing=document.createElement('div');ing.style.cssText='font-size:12px;color:var(--text2)';
+      ing.textContent=(d.ingredientes_principales||[]).join(' · ')+(d.tiempo?' · ⏱️ '+d.tiempo:'');
+      info.appendChild(cena);info.appendChild(ing);
+      card.appendChild(dayBadge);card.appendChild(info);
+      el.appendChild(card);
+    });
+  }catch(e){
+    document.getElementById('planContent').innerHTML='<div class="empty">Error al generar el plan: '+(e.message||'revisá tu API key')+'</div>';
+  }
+  btn.disabled=false;btn.textContent='✨ Generar plan con la IA';
+}
+
 function guardarRecetaDesdeIA(nombre,ingredientes,pasos,tip){
   const recetas=loadMisRecetas();
   recetas.unshift({id:Date.now().toString(),nombre,porciones:4,tiempo:'',
@@ -2929,6 +3053,25 @@ function guardarRecetaDesdeIA(nombre,ingredientes,pasos,tip){
     pasos,notas:tip||'',creadaEn:new Date().toISOString()});
   saveMisRecetas(recetas);
   toast('✅ Guardada en Mis Recetas 📖');
+}
+
+function actualizarPorciones(card,r,nuevasPorciones){
+  const base=r.porciones||4;
+  const factor=nuevasPorciones/base;
+  // Update ingredient quantities in the card
+  card.querySelectorAll('.misrec-ing-row').forEach((row,i)=>{
+    if(!r.ingredientes||!r.ingredientes[i])return;
+    const ing=r.ingredientes[i];
+    // Extract number from ingredient
+    const match=ing.match(/^([\d.,\/]+)\s*([a-zA-Z]*)\s*(.*)/);
+    if(match){
+      const num=parseFloat(match[1].replace(',','.'));
+      const scaled=Math.round(num*factor*10)/10;
+      const newTxt=scaled+(match[2]?' '+match[2]:'')+(match[3]?' '+match[3]:'');
+      const nm=row.querySelector('span:first-child');
+      if(nm)nm.textContent=newTxt;
+    }
+  });
 }
 
 function checkStockParaReceta(ingredientes){
@@ -3011,6 +3154,24 @@ function renderMisRecetas(){
     card.appendChild(hdr);
     const body=document.createElement('div');body.className='misrec-body';
     if(r.ingredientes&&r.ingredientes.length){
+      // Portion scaler
+      const scaler=document.createElement('div');
+      scaler.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:4px';
+      scaler.innerHTML='<span style="font-size:13px;color:var(--text2)">Porciones:</span>';
+      const btnMinus=document.createElement('button');btnMinus.className='qty-btn';btnMinus.textContent='−';
+      const pNum=document.createElement('span');pNum.className='qty-num';pNum.id='pnum_'+r.id;pNum.textContent=r.porciones||4;
+      const btnPlus=document.createElement('button');btnPlus.className='qty-btn';btnPlus.textContent='+';
+      btnMinus.onclick=(function(rec,el){return function(){
+        const cur=parseInt(el.textContent)||4;
+        if(cur>1){el.textContent=cur-1;actualizarPorciones(el.closest('.misrec-card'),rec,cur-1);}
+      };})(r,pNum);
+      btnPlus.onclick=(function(rec,el){return function(){
+        const cur=parseInt(el.textContent)||4;
+        el.textContent=cur+1;actualizarPorciones(el.closest('.misrec-card'),rec,cur+1);
+      };})(r,pNum);
+      scaler.appendChild(btnMinus);scaler.appendChild(pNum);scaler.appendChild(btnPlus);
+      body.appendChild(scaler);
+
       const t=document.createElement('div');t.className='section-lbl';t.textContent='Ingredientes';body.appendChild(t);
       sc.forEach(function(item){
         const row=document.createElement('div');row.className='misrec-ing-row';
@@ -3042,6 +3203,34 @@ function renderMisRecetas(){
 }
 
 // DASHBOARD
+function calcularPredicciones(){
+  const hist=loadHist();
+  const catalog=loadCatalog();
+  const predicciones=[];
+  // For each product, calculate average days between purchases
+  catalog.forEach(p=>{
+    const compras=hist.filter(h=>h.catId===p.id&&h.accion==='comprado').slice(0,10);
+    if(compras.length<2)return;
+    const fechas=compras.map(c=>new Date(c.ts)).sort((a,b)=>b-a);
+    const intervalos=[];
+    for(let i=0;i<fechas.length-1;i++){
+      intervalos.push((fechas[i]-fechas[i+1])/(1000*60*60*24));
+    }
+    const promedio=intervalos.reduce((s,v)=>s+v,0)/intervalos.length;
+    const diasDesdeUltima=(new Date()-fechas[0])/(1000*60*60*24);
+    // If it's been 80%+ of the average cycle, suggest buying
+    if(diasDesdeUltima>=promedio*0.8&&diasDesdeUltima<promedio*2){
+      const diasRestantes=Math.round(promedio-diasDesdeUltima);
+      predicciones.push({
+        nombre:p.nombre,
+        mensaje:diasRestantes<=0?'Ya deberías comprarlo (cada ~'+Math.round(promedio)+'d)':
+          'En ~'+diasRestantes+' día'+(diasRestantes!==1?'s':'')+' (cada '+Math.round(promedio)+'d aprox.)'
+      });
+    }
+  });
+  return predicciones.slice(0,3);
+}
+
 async function renderDashboard(){
   const el=document.getElementById('dashContent');
   if(!el)return;
@@ -3113,6 +3302,15 @@ async function renderDashboard(){
   if(recetasHoy.length){
     out+='<div class="dash-section">🍳 Podés cocinar ahora</div>';
     // recipe cards rendered via DOM above
+  }
+
+  // Predicciones
+  const predicciones=calcularPredicciones();
+  if(predicciones.length){
+    out+='<div class="dash-section">🔮 Compras sugeridas</div>';
+    predicciones.forEach(p2=>{
+      out+='<div class="dash-alert info" style="cursor:pointer" onclick="setMainTab(\'compras\')"><div class="dash-alert-icon">🛒</div><div class="dash-alert-body"><div class="dash-alert-title">'+p2.nombre+'</div><div class="dash-alert-sub">'+p2.mensaje+'</div></div></div>';
+    });
   }
 
   // Consumo reciente
