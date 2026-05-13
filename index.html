@@ -308,7 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.5</div>
+  <div class="ver">v9.6.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3421,9 +3421,24 @@ async function renderDashboard(){
       const locIcon={h:'🧊',f:'❄️',d:'🫙'}[item.loc]||'';
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)';
-      row.innerHTML='<div style="width:32px;height:32px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0">'+(item.img?'<img src="'+item.img+'" style="width:100%;height:100%;object-fit:cover">':(item.emoji||ALL_CATS[item.cat]||'📦'))+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.nombre+'</div>'+
-        '<div style="font-size:11px;color:var(--text2)">'+locIcon+' '+item.qty+' '+item.unidad+(item.venc?' · '+getBadge(item.venc):'')+'</div></div>'+
+      // Icon
+      const icoD=document.createElement('div');
+      icoD.style.cssText='width:32px;height:32px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0';
+      if(item.img){const im=document.createElement('img');im.src=item.img;im.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:8px';icoD.appendChild(im);}
+      else icoD.textContent=item.emoji||ALL_CATS[item.cat]||'📦';
+      // Info
+      const inf=document.createElement('div');inf.style.cssText='flex:1;min-width:0';
+      const nm=document.createElement('div');nm.style.cssText='font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';nm.textContent=item.nombre;
+      const sb=document.createElement('div');sb.style.cssText='font-size:11px;color:var(--text2);margin-top:1px';
+      sb.textContent=locIcon+' '+item.qty+' '+item.unidad;
+      if(item.venc){const bsp=document.createElement('span');bsp.innerHTML=' · '+getBadge(item.venc);sb.appendChild(bsp);}
+      inf.appendChild(nm);inf.appendChild(sb);
+      // Edit button
+      const eb=document.createElement('button');
+      eb.style.cssText='padding:5px 10px;border:none;border-radius:8px;background:rgba(0,0,0,.08);font-size:12px;cursor:pointer;flex-shrink:0';
+      eb.textContent='✏️';
+      eb.onclick=(function(id){return function(e){e.stopPropagation();openAssignModal(id);};})(item.id);
+      row.appendChild(icoD);row.appendChild(inf);row.appendChild(eb);
       list.appendChild(row);
     });
     card.appendChild(list);
