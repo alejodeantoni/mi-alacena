@@ -68,7 +68,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .esp-card-icon{font-size:26px;display:block;margin-bottom:3px}
 .esp-card-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.2;margin-bottom:5px}
 .esp-level{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
-.esp-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2)}
+.esp-dot{width:22px;height:22px;border-radius:50%;background:var(--bg4);border:2px solid var(--border2);cursor:pointer;transition:transform .1s}
+.esp-dot:active{transform:scale(0.85)}
 .esp-dot.on{background:#BF360C;border-color:#BF360C}
 .esp-dot.warn{background:#E8A020;border-color:#E8A020}
 .esp-badge-poco{position:absolute;top:4px;right:4px;font-size:9px;background:#E8A020;color:#fff;padding:1px 5px;border-radius:100px;font-weight:700}
@@ -308,7 +309,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.6.9</div>
+  <div class="ver">v9.7.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
