@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.3</div>
+  <div class="ver">v9.8.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -804,7 +804,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </select>
   </div>
   <button class="btn-primary" onclick="saveEditCatalog()">Guardar</button>
-  <button class="btn-danger" onclick="deleteCatalogItem()">Eliminar del catálogo</button>
+  <div id="deleteConfirmRow" style="display:none;background:#FCEBEB;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:13px;color:#791F1F;flex:1">¿Seguro que querés eliminar?</span>
+    <button onclick="deleteCatalogItem()" style="padding:6px 14px;border:none;border-radius:8px;background:#A32D2D;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Sí, eliminar</button>
+    <button onclick="document.getElementById('deleteConfirmRow').style.display='none'" style="padding:6px 10px;border:none;border-radius:8px;background:var(--bg4);color:var(--text2);font-size:13px;cursor:pointer">No</button>
+  </div>
+  <button class="btn-danger" onclick="document.getElementById('deleteConfirmRow').style.display='flex'">Eliminar del catálogo</button>
   <button class="btn-secondary" onclick="closeEditCatModal()">Cancelar</button>
 </div>
 </div>
@@ -1866,7 +1871,7 @@ function saveEditCatalog(){
 }
 let _deletedItem=null, _deletedStock=null, _deleteTimeout=null;
 function deleteCatalogItem(){
-  if(!confirm('¿Eliminar del catálogo?'))return;
+  document.getElementById('deleteConfirmRow').style.display='none';
   const catalog=loadCatalog();
   const prod=catalog.find(p=>p.id===editingCatId);
   if(!prod)return;
