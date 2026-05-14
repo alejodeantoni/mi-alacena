@@ -310,7 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.7.6</div>
+  <div class="ver">v9.7.7</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -847,6 +847,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="field"><label>Stock mínimo</label><input type="number" id="assignMin" value="0" min="0" step="0.5"></div>
+  <div class="field">
+    <label>Unidad de medida</label>
+    <select id="assignUnidad" style="width:100%;font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <option value="unid">unid</option>
+      <option value="g">g</option>
+      <option value="kg">kg</option>
+      <option value="ml">ml</option>
+      <option value="L">L</option>
+    </select>
+  </div>
   <div class="field">
     <label>Precio pagado (opcional) <span style="font-size:11px;color:var(--text3)">para calcular costos</span></label>
     <div style="display:flex;gap:8px;align-items:center">
@@ -1569,6 +1579,8 @@ function openAssignModal(catId){
   document.getElementById('assignMin').value=maxStockMin||0;
   const lastPrecio=allLocs.find(s=>s.precio>0)?.precio||0;
   const precioEl=document.getElementById('assignPrecio');if(precioEl)precioEl.value=lastPrecio||'';
+  const unidEl=document.getElementById('assignUnidad');
+  if(unidEl){unidEl.value=cat.unidad||'unid';}
   // Restore tupper number
   const tupperNum=stock[catId]?.f?.tupper||stock[catId]?.h?.tupper||'';
   const tf=document.getElementById('assignTupper');if(tf)tf.value=tupperNum;
@@ -1667,6 +1679,12 @@ function saveAssignment(){
   const p=getProfile();
   // Save stock — only apply stockMin to locations with qty > 0
   const precio=parseFloat(document.getElementById('assignPrecio')?.value)||0;
+  const nuevaUnidad=document.getElementById('assignUnidad')?.value||null;
+  // Update unit in catalog if changed
+  if(nuevaUnidad){
+    const catArr=loadCatalog();const ci=catArr.findIndex(p=>p.id===assigningCatId);
+    if(ci>=0&&catArr[ci].unidad!==nuevaUnidad){catArr[ci].unidad=nuevaUnidad;saveCatalog(catArr);}
+  }
   const tupperNum=document.getElementById('assignTupper')?.value||null;
   ['h','f','d'].forEach(l=>{
     stock[assigningCatId][l]={qty:assignQtys[l],venc,stockMin:assignQtys[l]>0?min:0,lastBy:p?.name||null,abierto:isAbierto,
