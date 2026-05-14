@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.6</div>
+  <div class="ver">v9.8.7</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1110,6 +1110,17 @@ applyDark();
 function daysLeft(d){if(!d)return null;return Math.round((new Date(d+'T00:00:00')-new Date(new Date().toDateString()))/86400000)}
 function getBadge(d){if(!d)return'';const dl=daysLeft(d);if(dl<0)return'<span class="badge badge-expired">Vencido</span>';if(dl===0)return'<span class="badge badge-danger">Hoy</span>';if(dl<=3)return'<span class="badge badge-danger">'+dl+'d</span>';if(dl<=7)return'<span class="badge badge-warn">'+dl+'d</span>';return'<span class="badge badge-ok">'+dl+'d</span>';}
 function fmtDay(iso){return new Date(iso).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}
+function fmtDateTime(iso){
+  const d=new Date(iso);
+  const date=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+  const time=d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const today=new Date();
+  const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+  const isToday=d.toDateString()===today.toDateString();
+  const isYesterday=d.toDateString()===yesterday.toDateString();
+  const prefix=isToday?'Hoy':isYesterday?'Ayer':date;
+  return prefix+' '+time;
+}
 function fmtTime(iso){return new Date(iso).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}
 function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
 
@@ -3722,7 +3733,7 @@ function renderHist(){
   el.innerHTML=hist.slice(0,80).map(h=>{
   const labels={consumido:'Consumido',agregado:'Agregado',comprado:'Comprado',eliminado:'Eliminado',movido:'Movido'};
   const cantStr=(h.delta&&h.delta>0)?' · '+h.delta+' '+(h.unidad||'unid'):'';
-  return '<div class="hist-item"><div class="hist-icon" style="background:'+(COLORS[h.cat]||'#F1EFE8')+'">'+(ALL_CATS[h.cat]||'📦')+'</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+h.nombre+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+fmtDay(h.ts)+cantStr+' · por <span style="color:'+(h.byColor||'#666')+'">'+h.by+'</span></div></div><span class="hist-action '+h.accion+'">'+(labels[h.accion]||h.accion)+'</span></div>';
+  return '<div class="hist-item"><div class="hist-icon" style="background:'+(COLORS[h.cat]||'#F1EFE8')+'">'+(ALL_CATS[h.cat]||'📦')+'</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--text)">'+h.nombre+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+fmtDateTime(h.ts)+cantStr+' · por <span style="color:'+(h.byColor||'#666')+'">'+h.by+'</span></div></div><span class="hist-action '+h.accion+'">'+(labels[h.accion]||h.accion)+'</span></div>';
 }).join('');
 }
 function setHistFilter(f){histFilter=f;renderHist();}
