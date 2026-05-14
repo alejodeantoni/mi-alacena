@@ -310,7 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.7.3</div>
+  <div class="ver">v9.7.4</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -369,6 +369,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="flex:1;font-size:11px;color:var(--text3);display:flex;align-items:center">La IA detecta productos</div>
   </div>
   <div id="fotoInteriorResult" style="display:none;margin-bottom:10px;padding:10px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text)"></div>
+  <div style="display:flex;gap:6px;margin-bottom:6px">
+    <button id="sortAlfa" onclick="setInvSort('alfa')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">A-Z</button>
+    <button id="sortQty" onclick="setInvSort('qty')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">Cantidad ↓</button>
+    <button id="sortVenc2" onclick="setInvSort('venc')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">Venc ↑</button>
+    <button id="sortDefault" onclick="setInvSort('default')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:#378ADD;color:#fff;font-size:12px;cursor:pointer;font-weight:500">Cat</button>
+  </div>
   <div class="search-bar">
     <input id="searchInput" placeholder="Buscar en todo..." oninput="renderInventory()">
     <button class="sort-btn h" id="sortBtn" onclick="toggleSort()">📅 Venc.</button>
@@ -1339,6 +1345,19 @@ function setNav(n){
 function getCatsForLoc(l){return l==='h'?CATS_H:l==='f'?CATS_F:CATS_D;}
 function toggleSort(){sortByVenc=!sortByVenc;renderAll();}
 
+let invSort='default'; // 'default' | 'alfa' | 'qty' | 'venc'
+function setInvSort(s){
+  invSort=s;
+  const btns={alfa:'sortAlfa',qty:'sortQty',venc:'sortVenc2',default:'sortDefault'};
+  Object.entries(btns).forEach(([k,id])=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.style.background=k===s?'#378ADD':'var(--bg3)';
+    el.style.color=k===s?'#fff':'var(--text2)';
+  });
+  renderInventory();
+}
+
 function renderAll(){renderStatsRow();renderCatFilter();renderInventory();renderVenc();renderSmartAlerts();checkVencReminders();}
 
 function renderStatsRow(){
@@ -1366,6 +1385,10 @@ function renderInventory(){
   // Global search across all locations
   let items=q?getAllStocked().filter(i=>i.nombre.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q)):getLocItems(loc);
   if(!q&&currentCat!=='Todos')items=items.filter(i=>i.cat===currentCat);
+  // Custom sort
+  if(invSort==='alfa')items.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  else if(invSort==='qty')items.sort((a,b)=>b.qty-a.qty);
+  else if(invSort==='venc')items.sort((a,b)=>{if(!a.venc&&!b.venc)return 0;if(!a.venc)return 1;if(!b.venc)return -1;return new Date(a.venc)-new Date(b.venc);});
   if(sortByVenc)items.sort((a,b)=>{if(!a.venc&&!b.venc)return 0;if(!a.venc)return 1;if(!b.venc)return-1;return new Date(a.venc)-new Date(b.venc);});
   const CATS=getCatsForLoc(loc);const el=document.getElementById('itemList');
   if(!items.length){el.innerHTML='<div class="empty" style="padding:2rem 1rem">'+
