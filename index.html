@@ -310,7 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.7.4</div>
+  <div class="ver">v9.7.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -413,6 +413,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- CATALOGO -->
 <div id="sc-cat" class="screen" style="display:none">
+  <div style="display:flex;gap:6px;margin-bottom:6px">
+    <button id="catSortAlfa" onclick="setCatSort('alfa')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:#3A7A1E;color:#fff;font-size:12px;cursor:pointer;font-weight:500">A-Z</button>
+    <button id="catSortCat" onclick="setCatSort('cat')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">Categoría</button>
+    <button id="catSortStock" onclick="setCatSort('stock')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">Con stock</button>
+  </div>
   <div class="search-bar"><input id="catSearch" placeholder="Buscar en catálogo..." oninput="renderCatalog()"></div>
   <div class="cat-filter" id="catCatFilter"></div>
   <div id="catalogList"></div>
@@ -582,9 +587,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ESPECIAS -->
 <div id="sc-esp" class="screen" style="display:none">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
     <input id="espSearch" placeholder="Buscar especia..." oninput="renderEsp()" style="flex:1;font-size:14px;padding:8px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg3);color:var(--text);outline:none">
     <button onclick="toggleEspView()" id="espViewBtn" style="padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);cursor:pointer;font-size:12px;white-space:nowrap">☰ Lista</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:8px">
+    <button id="espSortNivel" onclick="setEspSort('nivel')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:#BF360C;color:#fff;font-size:12px;cursor:pointer;font-weight:500">Nivel ↓</button>
+    <button id="espSortAlfa" onclick="setEspSort('alfa')" style="flex:1;padding:6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500">A-Z</button>
   </div>
   <div id="espStats" style="margin-bottom:10px"></div>
   <div id="espList"></div>
@@ -1345,9 +1354,10 @@ function setNav(n){
 function getCatsForLoc(l){return l==='h'?CATS_H:l==='f'?CATS_F:CATS_D;}
 function toggleSort(){sortByVenc=!sortByVenc;renderAll();}
 
-let invSort='default'; // 'default' | 'alfa' | 'qty' | 'venc'
+let invSort=localStorage.getItem('pref_invSort')||'default';
 function setInvSort(s){
   invSort=s;
+  localStorage.setItem('pref_invSort',s);
   const btns={alfa:'sortAlfa',qty:'sortQty',venc:'sortVenc2',default:'sortDefault'};
   Object.entries(btns).forEach(([k,id])=>{
     const el=document.getElementById(id);
@@ -1381,6 +1391,9 @@ function renderCatFilter(){
 function filterCat(c){currentCat=c;renderCatFilter();renderInventory();}
 
 function renderInventory(){
+  // Restore sort button highlight
+  const _ib={alfa:'sortAlfa',qty:'sortQty',venc:'sortVenc2',default:'sortDefault'};
+  Object.entries(_ib).forEach(([k,id])=>{const el=document.getElementById(id);if(!el)return;el.style.background=k===invSort?'#378ADD':'var(--bg3)';el.style.color=k===invSort?'#fff':'var(--text2)';});
   const q=document.getElementById('searchInput').value.toLowerCase().trim();
   // Global search across all locations
   let items=q?getAllStocked().filter(i=>i.nombre.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q)):getLocItems(loc);
@@ -1498,10 +1511,30 @@ function renderVenc(){
 function setVencView(v){document.getElementById('vt-cur').classList.toggle('active',v==='cur');document.getElementById('vt-all').classList.toggle('active',v==='all');renderVenc();}
 
 // CATALOG
+let catSort=localStorage.getItem('pref_catSort')||'alfa';
+function setCatSort(s){
+  catSort=s;
+  localStorage.setItem('pref_catSort',s);
+  ['alfa','cat','stock'].forEach(k=>{
+    const el=document.getElementById('catSort'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(!el)return;
+    el.style.background=k===s?'#3A7A1E':'var(--bg3)';
+    el.style.color=k===s?'#fff':'var(--text2)';
+  });
+  renderCatalog();
+}
 function renderCatalog(){
   const catalog=loadCatalog();const stock=loadStock();
   const q=document.getElementById('catSearch').value.toLowerCase().trim();
   let items=q?catalog.filter(p=>p.nombre.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):catalog;
+  const catStock=loadStock();
+  if(catSort==='alfa') items=[...items].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  else if(catSort==='cat') items=[...items].sort((a,b)=>a.cat.localeCompare(b.cat,'es')||a.nombre.localeCompare(b.nombre,'es'));
+  else if(catSort==='stock') items=[...items].sort((a,b)=>{
+    const as=['h','f','d'].some(l=>catStock[a.id]?.[l]?.qty>0)?1:0;
+    const bs=['h','f','d'].some(l=>catStock[b.id]?.[l]?.qty>0)?1:0;
+    return bs-as||a.nombre.localeCompare(b.nombre,'es');
+  });
   if(catCatFilter!=='Todos')items=items.filter(p=>p.cat===catCatFilter);
   const cats=['Todos',...new Set(catalog.map(p=>p.cat))];
   document.getElementById('catCatFilter').innerHTML=cats.map(c=>'<button class="cat-pill'+(c===catCatFilter?' active cat':'')+'" onclick="setCatCatFilter(\''+c+'\')">'+( c==='Todos'?'Todos':(ALL_CATS[c]||'📦')+' '+c)+'</button>').join('');
@@ -2982,6 +3015,16 @@ function loadEspecias(){return JSON.parse(localStorage.getItem('especias')||'{}'
 function saveEspecias(e){localStorage.setItem('especias',JSON.stringify(e));scheduleSync();}
 
 let espView='grid'; // 'grid' or 'list'
+let espSort=localStorage.getItem('pref_espSort')||'nivel';
+function setEspSort(s){
+  espSort=s;
+  localStorage.setItem('pref_espSort',s);
+  document.getElementById('espSortNivel').style.background=s==='nivel'?'#BF360C':'var(--bg3)';
+  document.getElementById('espSortNivel').style.color=s==='nivel'?'#fff':'var(--text2)';
+  document.getElementById('espSortAlfa').style.background=s==='alfa'?'#BF360C':'var(--bg3)';
+  document.getElementById('espSortAlfa').style.color=s==='alfa'?'#fff':'var(--text2)';
+  renderEsp();
+}
 function toggleEspView(){
   espView=espView==='grid'?'list':'grid';
   document.getElementById('espViewBtn').textContent=espView==='grid'?'☰ Lista':'⊞ Grilla';
@@ -3020,6 +3063,10 @@ const ESP_NIVELES=[
 ];
 
 function renderEsp(){
+  // Restore sort button highlight
+  const _esb=document.getElementById('espSortNivel');const _esba=document.getElementById('espSortAlfa');
+  if(_esb){_esb.style.background=espSort==='nivel'?'#BF360C':'var(--bg3)';_esb.style.color=espSort==='nivel'?'#fff':'var(--text2)';}
+  if(_esba){_esba.style.background=espSort==='alfa'?'#BF360C':'var(--bg3)';_esba.style.color=espSort==='alfa'?'#fff':'var(--text2)';}
   const q=(document.getElementById('espSearch')?.value||'').toLowerCase().trim();
   const catalog=loadCatalog();
   const esp=loadEspecias();
@@ -3043,9 +3090,10 @@ function renderEsp(){
 
   // Sort: lleno > medio > poco > no tengo, then alpha
   items.sort((a,b)=>{
+    if(espSort==='alfa')return a.nombre.localeCompare(b.nombre,'es');
     const na=esp[a.id]?.nivel||0, nb=esp[b.id]?.nivel||0;
     if(na!==nb)return nb-na;
-    return a.nombre.localeCompare(b.nombre);
+    return a.nombre.localeCompare(b.nombre,'es');
   });
 
   if(espView==='grid'){
