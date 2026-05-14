@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.2</div>
+  <div class="ver">v9.8.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1864,12 +1864,60 @@ function saveEditCatalog(){
   if(currentEditCatImg!==undefined)cat[idx].img=currentEditCatImg;
   saveCatalog(cat);closeEditCatModal();renderCatalog();renderAll();toast('Guardado');
 }
+let _deletedItem=null, _deletedStock=null, _deleteTimeout=null;
 function deleteCatalogItem(){
   if(!confirm('¿Eliminar del catálogo?'))return;
-  saveCatalog(loadCatalog().filter(p=>p.id!==editingCatId));
-  const stock=loadStock();delete stock[editingCatId];saveStock(stock);
-  closeEditCatModal();renderCatalog();renderAll();toast('Eliminado');
+  const catalog=loadCatalog();
+  const prod=catalog.find(p=>p.id===editingCatId);
+  if(!prod)return;
+  // Save for undo
+  _deletedItem=prod;
+  const stock=loadStock();
+  _deletedStock=stock[editingCatId]||null;
+  // Add to historial
+  const h=loadHist();const p=getProfile();
+  h.unshift({id:Date.now().toString(),nombre:prod.nombre,cat:prod.cat,accion:'eliminado',delta:0,by:p?.name||'?',byColor:p?.color||'#666',ts:new Date().toISOString()});
+  saveHist(h);
+  // Delete
+  saveCatalog(catalog.filter(p=>p.id!==editingCatId));
+  delete stock[editingCatId];saveStock(stock);
+  closeEditCatModal();renderCatalog();renderAll();
+  // Show undo toast
+  if(_deleteTimeout)clearTimeout(_deleteTimeout);
+  showUndoToast('Eliminado: '+prod.nombre);
+  _deleteTimeout=setTimeout(()=>{_deletedItem=null;_deletedStock=null;},8000);
 }
+
+function undoDelete(){
+  if(!_deletedItem)return;
+  if(_deleteTimeout)clearTimeout(_deleteTimeout);
+  const catalog=loadCatalog();
+  catalog.push(_deletedItem);
+  saveCatalog(catalog);
+  if(_deletedStock){
+    const stock=loadStock();
+    stock[_deletedItem.id]=_deletedStock;
+    saveStock(stock);
+  }
+  _deletedItem=null;_deletedStock=null;
+  renderCatalog();renderAll();
+  hideUndoToast();
+  toast('✅ Producto restaurado');
+}
+
+function showUndoToast(msg){
+  let el=document.getElementById('undoToast');
+  if(!el){
+    el=document.createElement('div');el.id='undoToast';
+    el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;z-index:999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap';
+    document.body.appendChild(el);
+  }
+  el.innerHTML=msg+'<button onclick="undoDelete()" style="padding:4px 12px;border:none;border-radius:8px;background:#E8A020;color:#fff;font-size:12px;font-weight:700;cursor:pointer">↩ Deshacer</button><button onclick="hideUndoToast()" style="padding:4px 8px;border:none;background:transparent;color:rgba(255,255,255,.6);cursor:pointer;font-size:16px">✕</button>';
+  el.style.display='flex';
+  if(_deleteTimeout)clearTimeout(_deleteTimeout);
+  _deleteTimeout=setTimeout(()=>{hideUndoToast();_deletedItem=null;_deletedStock=null;},8000);
+}
+function hideUndoToast(){const el=document.getElementById('undoToast');if(el)el.style.display='none';}
 function closeEditCatModal(){document.getElementById('editCatModalBg').classList.remove('open');editingCatId=null;}
 
 // ADD MODAL
