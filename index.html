@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.5</div>
+  <div class="ver">v9.8.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -1527,8 +1527,25 @@ function changeQty(catId,l,delta){
 }
 
 function removeFromLoc(catId,l){
-  const stock=loadStock();if(stock[catId]&&stock[catId][l])stock[catId][l].qty=0;
-  saveStock(stock);renderAll();toast('Quitado');
+  const stock=loadStock();
+  const qty=stock[catId]?.[l]?.qty||0;
+  if(stock[catId]&&stock[catId][l])stock[catId][l].qty=0;
+  saveStock(stock);
+  // Log to historial
+  if(qty>0){
+    const cat=loadCatalog().find(p=>p.id===catId);
+    const h=loadHist();const p=getProfile();
+    h.unshift({id:Date.now().toString(),nombre:cat?.nombre||catId,cat:cat?.cat||'',accion:'consumido',delta:qty,by:p?.name||'?',byColor:p?.color||'#666',ts:new Date().toISOString(),loc:l});
+    saveHist(h);
+  }
+  // Undo
+  _deletedItem=null;
+  _deletedStock={[l]:{...stock[catId]?.[l],qty}};
+  _deletedCatId=catId;
+  if(_deleteTimeout)clearTimeout(_deleteTimeout);
+  showUndoToast('Quitado de '+(l==='h'?'heladera':l==='f'?'freezer':'despensa'));
+  _deleteTimeout=setTimeout(()=>{_deletedItem=null;_deletedStock=null;_deletedCatId=null;},6000);
+  renderAll();
 }
 
 function renderVenc(){
@@ -1886,7 +1903,7 @@ function saveEditCatalog(){
   if(currentEditCatImg!==undefined)cat[idx].img=currentEditCatImg;
   saveCatalog(cat);closeEditCatModal();renderCatalog();renderAll();toast('Guardado');
 }
-let _deletedItem=null, _deletedStock=null, _deleteTimeout=null;
+let _deletedItem=null, _deletedStock=null, _deleteTimeout=null, _deletedCatId=null;
 function deleteCatalogItem(){
   document.getElementById('deleteConfirmRow').style.display='none';
   const catalog=loadCatalog();
@@ -1911,8 +1928,18 @@ function deleteCatalogItem(){
 }
 
 function undoDelete(){
-  if(!_deletedItem)return;
   if(_deleteTimeout)clearTimeout(_deleteTimeout);
+  if(_deletedCatId&&_deletedStock){
+    // Undo swipe remove
+    const stock=loadStock();
+    if(!stock[_deletedCatId])stock[_deletedCatId]={};
+    Object.assign(stock[_deletedCatId],_deletedStock);
+    saveStock(stock);
+    _deletedCatId=null;_deletedStock=null;
+    renderAll();hideUndoToast();toast('✅ Restaurado');
+    return;
+  }
+  if(!_deletedItem)return;
   const catalog=loadCatalog();
   catalog.push(_deletedItem);
   saveCatalog(catalog);
