@@ -1438,7 +1438,7 @@ function renderInventory(){
       '<div class="item-actions">'+
         '<div class="qty-ctrl">'+
           '<button class="qty-btn" onclick="changeQty(\''+item.id+'\',\''+curLoc+'\',-1)">−</button>'+
-          '<span class="qty-num">'+item.qty+'</span>'+
+          '<span class="qty-num">'+item.qty+'<span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:2px">'+item.unidad+'</span></span>'+
           '<button class="qty-btn" onclick="changeQty(\''+item.id+'\',\''+curLoc+'\',1)">+</button>'+
         '</div>'+
         '<button class="icon-btn" onclick="openAssignModal(\''+item.id+'\')">✏️</button>'+
