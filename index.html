@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.6</div>
+  <div class="ver">v9.9.7</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2290,7 +2290,7 @@ function renderShopListByTienda(){
       if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
       const chk=document.createElement('div');chk.className='shop-check'+(c.shopDone?' done':'');
       chk.textContent=c.shopDone?'✓':'';
-      div.appendChild(iconDiv);div.appendChild(nm);div.appendChild(chk);
+      div.appendChild(iconDiv);div.appendChild(nmWrap);div.appendChild(chk);
       el.appendChild(div);
     });
   });
@@ -2315,9 +2315,17 @@ function renderShopList(){
     iconDiv.style.background=isDone?'var(--bg4)':(COLORS[cat?.cat]||'#F1EFE8');
     if(cat?.img){const img=document.createElement('img');img.src=cat.img;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';iconDiv.appendChild(img);}
     else{iconDiv.textContent=ALL_CATS[cat?.cat]||'📦';}
+    const nmWrap=document.createElement('div');nmWrap.style.cssText='flex:1;min-width:0';
     const nm=document.createElement('div');nm.className='shop-item-name';
     nm.textContent=c.nombre;
-    if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
+    if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--text3)';
+    nmWrap.appendChild(nm);
+    if(c.receta){
+      const tag=document.createElement('div');
+      tag.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';
+      tag.textContent='🍳 '+c.receta;
+      nmWrap.appendChild(tag);
+    }
     const chk=document.createElement('div');chk.className='shop-check'+(isDone?' done':'');
     chk.textContent=isDone?'✓':'';
     div.appendChild(iconDiv);div.appendChild(nm);div.appendChild(chk);
