@@ -2289,6 +2289,7 @@ function renderShopListByTienda(){
       nm.textContent=c.nombre;
       if(c.receta){const rt=document.createElement('div');rt.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';rt.textContent='🍳 '+c.receta;nmWrap2.appendChild(nm);nmWrap2.appendChild(rt);}else{nmWrap2.appendChild(nm);}
       if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3)';
+      const chk=document.createElement('div');chk.className='shop-check'+(c.shopDone?' done':'');
       chk.textContent=c.shopDone?'✓':'';
       div.appendChild(iconDiv);div.appendChild(nmWrap2);div.appendChild(chk);
       el.appendChild(div);
