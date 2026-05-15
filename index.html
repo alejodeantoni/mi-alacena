@@ -146,7 +146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .shop-item{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
 .shop-item.bought{background:var(--bg4);opacity:0.6}
 .shop-item-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
-.shop-item-name{font-size:15px;font-weight:500;color:var(--text);flex:1}
+.shop-item-name{font-size:15px;font-weight:500;color:var(--text)}
 .shop-check{width:28px;height:28px;border:2px solid var(--border2);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
 .shop-check.done{background:#1D9E75;border-color:#1D9E75;color:#fff}
 /* Chat */
@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.7</div>
+  <div class="ver">v9.9.8</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2315,7 +2315,7 @@ function renderShopList(){
     iconDiv.style.background=isDone?'var(--bg4)':(COLORS[cat?.cat]||'#F1EFE8');
     if(cat?.img){const img=document.createElement('img');img.src=cat.img;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';iconDiv.appendChild(img);}
     else{iconDiv.textContent=ALL_CATS[cat?.cat]||'📦';}
-    const nmWrap=document.createElement('div');nmWrap.style.cssText='flex:1;min-width:0';
+    const nmWrap=document.createElement('div');nmWrap.style.cssText='flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center';
     const nm=document.createElement('div');nm.className='shop-item-name';
     nm.textContent=c.nombre;
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--text3)';
