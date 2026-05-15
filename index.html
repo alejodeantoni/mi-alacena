@@ -2450,6 +2450,73 @@ function addCompra(){
   setTimeout(function(){document.getElementById('compraItemNombre').focus();},200);
 }
 
+function closeAddCompraModal(){document.getElementById('addCompraModalBg').classList.remove('open');window._editingCompraId=null;}
+
+function checkCompraAC(q){
+  const el=document.getElementById('compraAC');
+  if(!q||q.length<2){el.style.display='none';return;}
+  const matches=loadCatalog().filter(p=>p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+  if(!matches.length){el.style.display='none';return;}
+  el.style.display='block';el.innerHTML='';
+  matches.forEach(function(p){
+    const row=document.createElement('div');
+    row.style.cssText='padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--bg4);font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px';
+    row.onmouseover=function(){this.style.background='var(--bg3)';};
+    row.onmouseout=function(){this.style.background='';};
+    const ic=document.createElement('span');ic.textContent=p.emoji||ALL_CATS[p.cat]||'';
+    const nm=document.createElement('span');nm.textContent=p.nombre;
+    row.appendChild(ic);row.appendChild(nm);
+    row.onclick=function(){
+      document.getElementById('compraItemNombre').value=p.nombre;
+      document.getElementById('compraItemUnidad').value=p.unidad||'unid';
+      if(p.tienda)document.getElementById('compraItemTienda').value=p.tienda;
+      el.style.display='none';
+    };
+    el.appendChild(row);
+  });
+}
+
+function editCompraItem(id){
+  const compras=loadCompras();
+  const c=compras.find(x=>x.id===id);if(!c)return;
+  const match=c.nombre.match(/^(.+?)\s*\((x?([\d.]+)\s*([a-zA-Z]+))\)$/);
+  if(match){
+    document.getElementById('compraItemNombre').value=match[1].trim();
+    document.getElementById('compraItemQty').value=match[3];
+    document.getElementById('compraItemUnidad').value=match[4]||'unid';
+  } else {
+    document.getElementById('compraItemNombre').value=c.nombre;
+    document.getElementById('compraItemQty').value='';
+    document.getElementById('compraItemUnidad').value='unid';
+  }
+  document.getElementById('compraItemTienda').value=c.tienda||'';
+  document.getElementById('compraAC').style.display='none';
+  window._editingCompraId=id;
+  document.getElementById('addCompraModalBg').classList.add('open');
+  setTimeout(function(){document.getElementById('compraItemNombre').focus();},200);
+}
+
+function guardarAddCompra(){
+  const nombre=document.getElementById('compraItemNombre').value.trim();
+  if(!nombre){toast('Ingresá el nombre');return;}
+  const qty=document.getElementById('compraItemQty').value.trim();
+  const unidad=document.getElementById('compraItemUnidad').value;
+  const tienda=document.getElementById('compraItemTienda').value;
+  const nombreFinal=qty?nombre+' ('+qty+' '+unidad+')':nombre;
+  const compras=loadCompras();
+  if(window._editingCompraId){
+    const idx=compras.findIndex(x=>x.id===window._editingCompraId);
+    if(idx>=0){compras[idx].nombre=nombreFinal;if(tienda)compras[idx].tienda=tienda;}
+    window._editingCompraId=null;
+    toast('Actualizado');
+  } else {
+    compras.unshift({id:Date.now().toString(),nombre:nombreFinal,done:false,origen:'d',tienda:tienda||null});
+    toast('Agregado a compras');
+  }
+  saveCompras(compras);closeAddCompraModal();renderCompras();renderSmartCompras();
+}
+
+
 // CHAT
 function renderChat(){
   const msgs=loadChat();const el=document.getElementById('chatMsgs');const p=getProfile();
