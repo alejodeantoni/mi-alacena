@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.4</div>
+  <div class="ver">v9.9.5</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2137,7 +2137,7 @@ async function checkReceta(){
   try{const text=await callGemini('Quiero hacer: "'+query+'"\nTengo: '+lista+'.\nSOLO JSON:\n{"receta":"...","ingredientes":[{"nombre":"...","tengo":true,"esencial":true}],"se_puede_hacer":true,"nota":"..."}');const r=JSON.parse(text.replace(/```json|```/g,'').trim());const faltanEsenciales=(r.ingredientes||[]).filter(i=>!i.tengo&&i.esencial);document.getElementById('recetaResults').innerHTML='<div class="receta-card"><div class="receta-title">'+(r.se_puede_hacer?'✅':'❌')+' '+r.receta+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:10px">'+r.nota+'</div>'+(r.ingredientes||[]).map(ing=>'<div class="falta-row"><span class="falta-nombre">'+ing.nombre+(ing.esencial?'':' <span style="font-size:11px;color:var(--text3)">(opt)</span>')+'</span><span class="falta-estado '+(ing.tengo?'tengo':'falta')+'">'+(ing.tengo?'✓ Tengo':'✗ Falta')+'</span></div>').join('')+(faltanEsenciales.length?'<button class="btn-secondary" style="margin-top:10px" onclick="agregarFaltantes('+JSON.stringify(faltanEsenciales.map(i=>i.nombre))+')">+ Agregar a compras</button>':'')+'</div>';}
   catch(e){document.getElementById('recetaResults').innerHTML='<div class="empty">Error</div>';}
 }
-function agregarFaltantes(items){
+function agregarFaltantes(items, recetaNombre){
   const compras=loadCompras();let n=0;
   items.forEach(item=>{
     // item can be string or {nombre, cantFalta, needUnit, ing}
@@ -2151,7 +2151,7 @@ function agregarFaltantes(items){
       nombre=cantStr?base+' (necesito '+cantStr+')':base;
     }
     if(!compras.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){
-      compras.push({id:Date.now().toString()+Math.random(),nombre,done:false,origen:'d'});n++;
+      compras.push({id:Date.now().toString()+Math.random(),nombre,done:false,origen:'d',receta:recetaNombre||null});n++;
     }
   });
   saveCompras(compras);
@@ -2262,6 +2262,7 @@ function renderShopListByTienda(){
       else iconDiv.textContent=ALL_CATS[cat2?.cat]||'📦';
       const nm=document.createElement('div');nm.className='shop-item-name';
       nm.textContent=c.nombre;
+      if(c.receta){const rt=document.createElement('div');rt.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';rt.textContent='🍳 '+c.receta;nm.after(rt);}
       if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
       const chk=document.createElement('div');chk.className='shop-check'+(c.shopDone?' done':'');
       chk.textContent=c.shopDone?'✓':'';
@@ -3099,7 +3100,7 @@ function renderComprasPorSeccion(){
     items.forEach(c=>{
       out+='<div class="compra-item">';
       out+='<div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div>';
-      out+='<span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+'</span>';
+      out+='<div style="flex:1;min-width:0"><span class="compra-txt'+(c.done?' done':'')+'">'+ c.nombre+'</span>'+(c.receta?'<div style="font-size:10px;color:#C87820;font-weight:600;margin-top:1px">🍳 '+c.receta+'</div>':'')+'</div>';
       out+='<button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button>';
       out+='</div>';
     });
@@ -3619,7 +3620,7 @@ function renderMisRecetas(){
         const ab=document.createElement('button');ab.className='btn-secondary';ab.style.marginTop='8px';
         ab.textContent='🛒 Agregar faltantes a compras';
         ab.onclick=(function(items){return function(){
-          agregarFaltantes(items.filter(s=>!s.tengo));
+          agregarFaltantes(items.filter(s=>!s.tengo), r.nombre);
         };})(sc);
         body.appendChild(ab);
       }
