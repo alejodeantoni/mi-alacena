@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.2</div>
+  <div class="ver">v9.9.3</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3431,10 +3431,20 @@ function actualizarPorciones(card,r,nuevasPorciones){
 function checkStockParaReceta(ingredientes){
   // Normalize: remove accents, lowercase
   function norm(s){
-    return s.toLowerCase()
+    let r=s.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
       .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
-      .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n');
+      .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/n/g,'n');
+    return r;
+  }
+  // Normalize to singular for matching
+  function singular(s){
+    // Remove common plural endings in Spanish
+    return s
+      .replace(/ones$/,'on').replace(/iones$/,'ion')
+      .replace(/eses$/,'es').replace(/ces$/,'z')
+      .replace(/([aeiou])s$/,'$1')  // limones->limon, tomates->tomate
+      .replace(/es$/,'');           // fallback: removes -es
   }
 
   const allStock=getAllStocked().filter(i=>i.qty>0).map(i=>norm(i.nombre));
@@ -3449,16 +3459,18 @@ function checkStockParaReceta(ingredientes){
   function matchIngrediente(ing, stock){
     const ingClean=stripCantidad(ing);
     if(!ingClean)return false;
-    // 1. Exact match
-    if(stock.includes(ingClean))return true;
-    // 2. Stock item contained in ingredient
-    if(stock.some(s=>ingClean.includes(s)))return true;
-    // 3. Ingredient contained in stock item
-    if(stock.some(s=>s.includes(ingClean)))return true;
-    // 4. Match by meaningful words (min 3 chars, skip stopwords)
+    const ingSing=singular(ingClean);
+    const stockSing=stock.map(s=>singular(s));
+    // 1. Exact match (with and without plural)
+    if(stock.includes(ingClean)||stockSing.includes(ingSing))return true;
+    // 2. Stock item contained in ingredient (singular form)
+    if(stock.some((s,i)=>ingClean.includes(s)||ingSing.includes(stockSing[i])))return true;
+    // 3. Ingredient contained in stock item (singular form)
+    if(stock.some((s,i)=>s.includes(ingClean)||stockSing[i].includes(ingSing)))return true;
+    // 4. Match by meaningful words in singular form
     const stopwords=['para','con','sin','una','uno','dos','tres','media','medio','fresca','fresco','grande','chico','chica'];
-    const palabras=ingClean.split(/[\s,]+/).filter(p=>p.length>=3&&!stopwords.includes(p));
-    if(palabras.length>0&&stock.some(s=>palabras.some(p=>s.includes(p)||p.includes(s.split(' ')[0])))){return true;}
+    const palabras=ingSing.split(/[\s,]+/).filter(p=>p.length>=3&&!stopwords.includes(p));
+    if(palabras.length>0&&stockSing.some(s=>palabras.some(p=>s.includes(p)||p.includes(s.split(' ')[0])))){return true;}
     return false;
   }
 
