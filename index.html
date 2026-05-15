@@ -2437,7 +2437,15 @@ function toggleCompra(id){
 }
 function deleteCompra(id){saveCompras(loadCompras().filter(c=>c.id!==id));renderCompras();}
 function clearDoneCompras(){saveCompras(loadCompras().filter(c=>!c.done));renderCompras();toast('Limpido');}
-function addCompra(){const n=prompt('¿Qué querés agregar?');if(!n)return;const c=loadCompras();c.push({id:Date.now().toString(),nombre:n,done:false,origen:loc});saveCompras(c);renderCompras();}
+function addCompra(){
+  document.getElementById('compraItemNombre').value='';
+  document.getElementById('compraItemQty').value='';
+  document.getElementById('compraItemUnidad').value='unid';
+  document.getElementById('compraItemTienda').value='';
+  document.getElementById('compraAC').style.display='none';
+  document.getElementById('addCompraModalBg').classList.add('open');
+  setTimeout(function(){document.getElementById('compraItemNombre').focus();},200);
+}
 
 // CHAT
 function renderChat(){
