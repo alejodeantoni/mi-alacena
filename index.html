@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.8</div>
+  <div class="ver">v9.8.9</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3450,7 +3450,29 @@ function checkStockParaReceta(ingredientes){
     return false;
   }
 
-  return ingredientes.map(ing=>({ing, tengo:matchIngrediente(ing,allStock)}));
+  const allStockFull=getAllStocked().filter(i=>i.qty>0);
+  return ingredientes.map(ing=>{
+    const ingClean=stripCantidad(ing);
+    // Try to extract needed qty from ingredient string
+    const cantMatch=ing.match(/^([\d.,]+)\s*(g|kg|ml|l|cc|cdas?\.?|taza|unid)?/i);
+    const needQty=cantMatch?parseFloat(cantMatch[1].replace(',','.')):null;
+    const needUnit=cantMatch?cantMatch[2]?.toLowerCase():null;
+    // Find matching stock item
+    const matchedStock=allStockFull.find(s=>{
+      const sn=norm(s.nombre);
+      if(sn===ingClean||ingClean.includes(sn)||sn.includes(ingClean))return true;
+      const palabras=ingClean.split(/[\s,]+/).filter(p=>p.length>=3&&!['para','con','sin','una','uno','dos','tres','media','medio','fresca','fresco','grande','chico','chica'].includes(p));
+      return palabras.some(p=>sn.includes(p)||p.includes(sn.split(' ')[0]));
+    });
+    const tengo=matchIngrediente(ing,allStock);
+    let cantTengo=null,cantFalta=null;
+    if(matchedStock&&needQty){
+      cantTengo=matchedStock.qty;
+      const stockQty=matchedStock.qty;
+      if(stockQty<needQty)cantFalta=parseFloat((needQty-stockQty).toFixed(1));
+    }
+    return {ing, tengo, matchedStock:matchedStock||null, needQty, needUnit, cantTengo, cantFalta};
+  });
 }
 
 function renderMisRecetas(){
@@ -3528,7 +3550,21 @@ function renderMisRecetas(){
         const row=document.createElement('div');row.className='misrec-ing-row';
         const nm=document.createElement('span');nm.style.flex='1';nm.textContent=item.ing;
         const badge=document.createElement('span');badge.className=item.tengo?'misrec-badge-si':'misrec-badge-no';
-        badge.textContent=item.tengo?'✓ Tengo':'✗ Falta';
+        if(item.tengo){
+          if(item.cantTengo&&item.needQty){
+            badge.textContent='✓ '+item.cantTengo+' '+(item.matchedStock?.unidad||'');
+          } else {
+            badge.textContent='✓ Tengo';
+          }
+        } else {
+          if(item.cantFalta){
+            badge.textContent='✗ Faltan '+item.cantFalta+' '+(item.needUnit||item.matchedStock?.unidad||'');
+          } else if(item.matchedStock&&item.needQty){
+            badge.textContent='✗ Tengo '+item.matchedStock.qty+', necesito '+item.needQty;
+          } else {
+            badge.textContent='✗ No tengo';
+          }
+        }
         row.appendChild(nm);row.appendChild(badge);body.appendChild(row);
       });
       if(sc.some(s=>!s.tengo)){
