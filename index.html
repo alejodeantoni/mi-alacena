@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.8</div>
+  <div class="ver">v10.0.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -652,6 +652,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="field"><label>Notas (opcional)</label><textarea id="misrecNotas" placeholder="Tips, variaciones..."></textarea></div>
   <button class="btn-primary" style="background:#C87820" onclick="guardarMisReceta()">💾 Guardar receta</button>
   <button class="btn-secondary" onclick="cerrarNuevaReceta()">Cancelar</button>
+</div>
+</div>
+
+<!-- MODAL AGREGAR COMPRA -->
+<div class="modal-bg" id="addCompraModalBg" onclick="if(event.target===this)closeAddCompraModal()">
+<div class="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-header"><div class="modal-title">Agregar a compras</div></div>
+  <div class="field"><label>Nombre</label>
+    <input id="compraItemNombre" placeholder="Ej: Leche, Harina..." oninput="checkCompraAC(this.value)"/>
+    <div id="compraAC" style="display:none;margin-top:4px;border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--card)"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Cantidad</label>
+      <input type="text" inputmode="decimal" id="compraItemQty" placeholder="2" style="font-size:14px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none;width:100%"/>
+    </div>
+    <div class="field"><label>Unidad</label>
+      <select id="compraItemUnidad" style="width:100%;font-size:14px;padding:9px 8px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+        <option value="unid">unid</option><option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option>
+      </select>
+    </div>
+  </div>
+  <div class="field"><label>Tienda (opcional)</label>
+    <select id="compraItemTienda" style="width:100%;font-size:14px;padding:9px 8px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+      <option value="">Automatico</option><option value="supermercado">Supermercado</option>
+      <option value="verduleria">Verduleria</option><option value="dietetica">Dietetica</option>
+      <option value="carniceria">Carniceria</option><option value="otro">Otro</option>
+    </select>
+  </div>
+  <button class="btn-primary" onclick="guardarAddCompra()">+ Agregar</button>
+  <button class="btn-secondary" onclick="closeAddCompraModal()">Cancelar</button>
 </div>
 </div>
 
