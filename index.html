@@ -2284,13 +2284,13 @@ function renderShopListByTienda(){
       iconDiv.style.background=c.shopDone?'var(--bg4)':(COLORS[cat2?.cat]||'#F1EFE8');
       if(cat2?.img){const img=document.createElement('img');img.src=cat2.img;img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';iconDiv.appendChild(img);}
       else iconDiv.textContent=ALL_CATS[cat2?.cat]||'📦';
+      const nmWrap2=document.createElement('div');nmWrap2.style.cssText='flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center';
       const nm=document.createElement('div');nm.className='shop-item-name';
       nm.textContent=c.nombre;
-      if(c.receta){const rt=document.createElement('div');rt.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';rt.textContent='🍳 '+c.receta;nm.after(rt);}
-      if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3);flex:1';
-      const chk=document.createElement('div');chk.className='shop-check'+(c.shopDone?' done':'');
+      if(c.receta){const rt=document.createElement('div');rt.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';rt.textContent='🍳 '+c.receta;nmWrap2.appendChild(nm);nmWrap2.appendChild(rt);}else{nmWrap2.appendChild(nm);}
+      if(c.shopDone)nm.style.cssText='text-decoration:line-through;color:var(--text3)';
       chk.textContent=c.shopDone?'✓':'';
-      div.appendChild(iconDiv);div.appendChild(nmWrap);div.appendChild(chk);
+      div.appendChild(iconDiv);div.appendChild(nmWrap2);div.appendChild(chk);
       el.appendChild(div);
     });
   });
