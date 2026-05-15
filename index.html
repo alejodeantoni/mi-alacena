@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.1</div>
+  <div class="ver">v9.9.2</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3542,18 +3542,23 @@ function renderMisRecetas(){
       // Portion scaler
       const scaler=document.createElement('div');
       scaler.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:4px';
-      scaler.innerHTML='<span style="font-size:13px;color:var(--text2)">Porciones:</span>';
+      const unidLabel=r.unidadPorciones||'porciones';
+      scaler.innerHTML='<span style="font-size:13px;color:var(--text2)">'+unidLabel.charAt(0).toUpperCase()+unidLabel.slice(1)+':</span>';
       const btnMinus=document.createElement('button');btnMinus.className='qty-btn';btnMinus.textContent='−';
       const pNum=document.createElement('span');pNum.className='qty-num';pNum.id='pnum_'+r.id;pNum.textContent=r.porciones||4;
       const btnPlus=document.createElement('button');btnPlus.className='qty-btn';btnPlus.textContent='+';
-      btnMinus.onclick=(function(rec,el){return function(){
-        const cur=parseInt(el.textContent)||4;
-        if(cur>1){el.textContent=cur-1;actualizarPorciones(el.closest('.misrec-card'),rec,cur-1);}
-      };})(r,pNum);
-      btnPlus.onclick=(function(rec,el){return function(){
-        const cur=parseInt(el.textContent)||4;
-        el.textContent=cur+1;actualizarPorciones(el.closest('.misrec-card'),rec,cur+1);
-      };})(r,pNum);
+      const esDecimal=(r.unidadPorciones&&r.unidadPorciones!=='porciones'&&r.unidadPorciones!=='unid');
+      const step=esDecimal?0.1:1;
+      btnMinus.onclick=(function(rec,el,st){return function(){
+        const cur=parseFloat(el.textContent)||4;
+        const nv=Math.max(st,parseFloat((cur-st).toFixed(1)));
+        el.textContent=nv;actualizarPorciones(el.closest('.misrec-card'),rec,nv);
+      };})(r,pNum,step);
+      btnPlus.onclick=(function(rec,el,st){return function(){
+        const cur=parseFloat(el.textContent)||4;
+        const nv=parseFloat((cur+st).toFixed(1));
+        el.textContent=nv;actualizarPorciones(el.closest('.misrec-card'),rec,nv);
+      };})(r,pNum,step);
       scaler.appendChild(btnMinus);scaler.appendChild(pNum);scaler.appendChild(btnPlus);
       body.appendChild(scaler);
 
