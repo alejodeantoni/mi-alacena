@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.9</div>
+  <div class="ver">v9.9.0</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -634,7 +634,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="field"><label>Nombre</label><input id="misrecNombre" placeholder="Ej: Milanesas napolitanas"/></div>
   <div class="row2">
-    <div class="field"><label>Porciones</label><input id="misrecPorciones" type="number" min="1" value="4"/></div>
+    <div class="field"><label>Cantidad / Porciones</label>
+      <div style="display:flex;gap:6px">
+        <input id="misrecPorciones" type="number" min="0.1" step="0.1" value="4" style="flex:1"/>
+        <select id="misrecUnidadPorciones" style="font-size:13px;padding:8px 6px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);outline:none">
+          <option value="porciones">porciones</option>
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="L">L</option>
+          <option value="ml">ml</option>
+          <option value="unid">unid</option>
+        </select>
+      </div>
+    </div>
     <div class="field"><label>Tiempo</label><input id="misrecTiempo" placeholder="Ej: 45 min"/></div>
   </div>
   <div class="field"><label>Ingredientes (uno por línea)</label><textarea id="misrecIngredientes" style="height:100px;font-size:13px" placeholder="500g milanesas&#10;2 tomates&#10;100g mozzarella"></textarea></div>
@@ -3290,6 +3302,7 @@ function abrirNuevaReceta(receta){
   document.getElementById('misrecModalTitle').textContent=receta?'Editar receta':'Nueva receta';
   document.getElementById('misrecNombre').value=receta?receta.nombre:'';
   document.getElementById('misrecPorciones').value=receta?receta.porciones:4;
+  document.getElementById('misrecUnidadPorciones').value=receta?.unidadPorciones||'porciones';
   document.getElementById('misrecTiempo').value=receta?receta.tiempo:'';
   document.getElementById('misrecIngredientes').value=receta?(receta.ingredientes||[]).join('\n'):'';
   document.getElementById('misrecPasos').value=receta?(receta.pasos||[]).join('\n'):'';
@@ -3331,7 +3344,8 @@ function guardarMisReceta(){
   const ing=document.getElementById('misrecIngredientes').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const pasos=document.getElementById('misrecPasos').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const nueva={id:editingRecetaId||Date.now().toString(),nombre,
-    porciones:parseInt(document.getElementById('misrecPorciones').value)||4,
+    porciones:parseFloat(document.getElementById('misrecPorciones').value)||4,
+    unidadPorciones:document.getElementById('misrecUnidadPorciones').value||'porciones',
     tiempo:document.getElementById('misrecTiempo').value.trim(),
     ingredientes:ing,pasos,
     notas:document.getElementById('misrecNotas').value.trim(),
