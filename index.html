@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.8.7</div>
+  <div class="ver">v9.8.8</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -3417,27 +3417,36 @@ function actualizarPorciones(card,r,nuevasPorciones){
 }
 
 function checkStockParaReceta(ingredientes){
-  const allStock=getAllStocked().filter(i=>i.qty>0).map(i=>i.nombre.toLowerCase());
+  // Normalize: remove accents, lowercase
+  function norm(s){
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
+      .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n');
+  }
+
+  const allStock=getAllStocked().filter(i=>i.qty>0).map(i=>norm(i.nombre));
 
   function stripCantidad(texto){
-    return texto
-      .toLowerCase()
+    return norm(texto)
       .replace(/^[\d.,\/\s]+(g|kg|ml|l|cc|cdas?\.?|pizca|taza|unid|u\.?)?\s*(de\s+)?/i,'')
-      .replace(/\s*(fría|frío|entero|entera|rallad[ao]|picad[ao]|en\s+\w+)\s*$/i,'')
+      .replace(/\s*(fria|frio|entero|entera|rallad[ao]|picad[ao]|en\s+\w+)\s*$/i,'')
       .trim();
   }
 
   function matchIngrediente(ing, stock){
     const ingClean=stripCantidad(ing);
+    if(!ingClean)return false;
     // 1. Exact match
     if(stock.includes(ingClean))return true;
-    // 2. Stock item contained in ingredient name
+    // 2. Stock item contained in ingredient
     if(stock.some(s=>ingClean.includes(s)))return true;
-    // 3. Ingredient name contained in stock item
+    // 3. Ingredient contained in stock item
     if(stock.some(s=>s.includes(ingClean)))return true;
-    // 4. Match by main noun (first meaningful word, min 4 chars)
-    const palabras=ingClean.split(/[\s,]+/).filter(p=>p.length>=4 && !['para','con','sin','una','uno','dos','tres','media'].includes(p));
-    if(palabras.length>0 && stock.some(s=>palabras.some(p=>s.includes(p)||p.includes(s.split(' ')[0]))))return true;
+    // 4. Match by meaningful words (min 3 chars, skip stopwords)
+    const stopwords=['para','con','sin','una','uno','dos','tres','media','medio','fresca','fresco','grande','chico','chica'];
+    const palabras=ingClean.split(/[\s,]+/).filter(p=>p.length>=3&&!stopwords.includes(p));
+    if(palabras.length>0&&stock.some(s=>palabras.some(p=>s.includes(p)||p.includes(s.split(' ')[0])))){return true;}
     return false;
   }
 
