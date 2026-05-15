@@ -314,7 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="app">
 <div class="app-header">
   <div class="app-title">🏠 Mi Alacena</div>
-  <div class="ver">v9.9.5</div>
+  <div class="ver">v9.9.6</div>
   <button class="icon-btn-sm" onclick="pullFromCloud()" title="Sincronizar">🔄</button>
   <button class="icon-btn-sm" onclick="openSettings()" title="Configuración">⚙️</button>
   <div class="avatar" id="userAvatar" onclick="openProfileEdit()" title="Mi perfil"></div>
@@ -2211,8 +2211,32 @@ function updateCompraBadge(){
 function renderCompras(){
   const compras=loadCompras();const el=document.getElementById('compraList');
   if(!compras.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin ítems</div>';return;}
-  el.innerHTML=compras.map(c=>'<div class="compra-item"><div class="check-circle'+(c.done?' done':'')+'" onclick="toggleCompra(\''+c.id+'\')">'+(c.done?'✓':'')+'</div><span class="compra-txt'+(c.done?' done':'')+'">'+c.nombre+(c.auto?' <span style="font-size:10px;color:var(--text3)">auto</span>':'')+'</span><span class="badge-lugar '+(c.origen||'h')+'">'+(c.origen==='d'?'🫙':c.origen==='f'?'❄️':'🧊')+'</span><button class="icon-btn" onclick="deleteCompra(\''+c.id+'\')">✕</button></div>').join('');
+  el.innerHTML='';
+  compras.forEach(c=>{
+    const row=document.createElement('div');row.className='compra-item';
+    const chk=document.createElement('div');
+    chk.className='check-circle'+(c.done?' done':'');
+    chk.textContent=c.done?'✓':'';
+    chk.onclick=(function(id){return function(){toggleCompra(id);};})(c.id);
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    const nm=document.createElement('span');nm.className='compra-txt'+(c.done?' done':'');nm.textContent=c.nombre;
+    info.appendChild(nm);
+    if(c.receta){
+      const tag=document.createElement('div');
+      tag.style.cssText='font-size:10px;color:#C87820;font-weight:600;margin-top:1px';
+      tag.textContent='🍳 '+c.receta;
+      info.appendChild(tag);
+    }
+    const auto=c.auto?'<span class="compra-auto">auto</span>':'';
+    const tiendaIcon=c.tienda?'<span style="font-size:11px;margin-right:2px">'+(TIENDA_ICON[c.tienda]||'')+'</span>':'';
+    const extraDiv=document.createElement('div');extraDiv.innerHTML=auto+tiendaIcon;
+    const delBtn=document.createElement('button');delBtn.className='icon-btn';delBtn.textContent='✕';
+    delBtn.onclick=(function(id){return function(){deleteCompra(id);};})(c.id);
+    row.appendChild(chk);row.appendChild(info);if(extraDiv.innerHTML)row.appendChild(extraDiv);row.appendChild(delBtn);
+    el.appendChild(row);
+  });
 }
+
 function setShopView(v){
   document.getElementById('shopViewAll').className=v==='all'?'btn-primary':'btn-secondary';
   document.getElementById('shopViewAll').style.background=v==='all'?'#5B63D3':'transparent';
@@ -3619,9 +3643,9 @@ function renderMisRecetas(){
       if(sc.some(s=>!s.tengo)){
         const ab=document.createElement('button');ab.className='btn-secondary';ab.style.marginTop='8px';
         ab.textContent='🛒 Agregar faltantes a compras';
-        ab.onclick=(function(items){return function(){
-          agregarFaltantes(items.filter(s=>!s.tengo), r.nombre);
-        };})(sc);
+        ab.onclick=(function(items,nom){return function(){
+          agregarFaltantes(items.filter(s=>!s.tengo), nom);
+        };})(sc, r.nombre);
         body.appendChild(ab);
       }
     }
